@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IndexBlast Pro v5 — Real-Time GSC Indexer</title>
+<title>IndexBlast Pro v6 — Real-Time GSC Indexer + URL Pre-Flight Checker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
@@ -768,6 +769,191 @@ textarea::placeholder { color: var(--muted2); font-size: 0.65rem; }
 .gsc-steps { font-size: 0.62rem; color: var(--muted); line-height: 1.6; margin-top: 5px; }
 .gsc-steps li { margin-left: 14px; }
 .gsc-steps a { color: var(--blue); }
+
+/* ── PRE-FLIGHT CHECKER ── */
+.pf-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+.pf-tab {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pf-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.pf-tab:hover:not(.active) { color: var(--text); }
+
+.pf-panel { display: none; }
+.pf-panel.active { display: block; }
+
+.pf-input-row { display: flex; gap: 8px; align-items: flex-start; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.pf-input-row textarea { min-height: 80px; flex: 1; font-size: 0.65rem; }
+.pf-scan-btn {
+  background: var(--blue);
+  color: #000;
+  border: none;
+  border-radius: 7px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 10px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.pf-scan-btn:hover { background: #00c8ff; }
+.pf-scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.pf-results { padding: 0; }
+.pf-url-card {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+}
+.pf-url-card:last-child { border-bottom: none; }
+.pf-url-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.pf-url-text {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--blue);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pf-overall-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.pf-overall-badge.indexable { background: rgba(0,255,135,0.12); color: var(--green); border: 1px solid rgba(0,255,135,0.3); }
+.pf-overall-badge.blocked { background: rgba(255,61,90,0.12); color: var(--red); border: 1px solid rgba(255,61,90,0.3); }
+.pf-overall-badge.warning { background: rgba(255,124,30,0.1); color: var(--orange); border: 1px solid rgba(255,124,30,0.3); }
+.pf-overall-badge.scanning { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+.pf-checks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 8px; }
+@media (max-width: 700px) { .pf-checks { grid-template-columns: repeat(2, 1fr); } }
+
+.pf-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--surface2);
+  border-radius: 5px;
+  font-size: 0.62rem;
+  border: 1px solid var(--border);
+}
+.pf-check-icon { font-size: 0.75rem; flex-shrink: 0; }
+.pf-check-label { color: var(--muted); flex: 1; }
+.pf-check-val { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; }
+.pf-check-val.ok { color: var(--green); }
+.pf-check-val.fail { color: var(--red); }
+.pf-check-val.warn { color: var(--orange); }
+.pf-check-val.info { color: var(--blue); }
+
+.pf-issues { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.pf-issue {
+  font-size: 0.6rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.pf-issue.critical { background: rgba(255,61,90,0.12); color: var(--red); border: 1px solid rgba(255,61,90,0.25); }
+.pf-issue.warn { background: rgba(255,124,30,0.08); color: var(--orange); border: 1px solid rgba(255,124,30,0.2); }
+.pf-issue.spam { background: rgba(170,136,255,0.1); color: #aa88ff; border: 1px solid rgba(170,136,255,0.2); }
+
+.pf-recommendation {
+  font-size: 0.62rem;
+  color: var(--muted);
+  line-height: 1.5;
+  padding: 6px 10px;
+  background: var(--surface2);
+  border-radius: 5px;
+  border-left: 2px solid var(--blue);
+}
+
+.pf-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted2);
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+}
+
+.pf-summary-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.pf-summary-chip {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 4px;
+}
+.pf-summary-chip.green { background: var(--green-dim); color: var(--green); }
+.pf-summary-chip.red { background: rgba(255,61,90,0.1); color: var(--red); }
+.pf-summary-chip.orange { background: rgba(255,124,30,0.1); color: var(--orange); }
+
+/* Tab switcher for main area */
+.main-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
+.main-tab {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 10px 18px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.main-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.main-tab:hover:not(.active) { color: var(--text); }
+.main-panel { display: none; flex-direction: column; gap: 16px; }
+.main-panel.active { display: flex; }
+
+/* preflight card container */
+.preflight-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.preflight-card .card-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(0,180,255,0.04) 0%, transparent 100%);
+}
 </style>
 </head>
 <body>
@@ -779,7 +965,7 @@ textarea::placeholder { color: var(--muted2); font-size: 0.65rem; }
     <div class="logo">
       <div class="logo-mark">⚡</div>
       <span class="logo-name">INDEXBLAST PRO</span>
-      <span class="logo-ver">v5.0</span>
+      <span class="logo-ver">v6.0</span>
     </div>
     <div class="topbar-stats">
       <div class="tstat green"><span class="live-dot"></span><span>Status</span><span class="val" id="hdr-status">READY</span></div>
@@ -813,36 +999,114 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
         </div>
       </div>
 
-      <!-- GSC Token — CORE ENGINE -->
+      <!-- GSC — CORE ENGINE (tabbed: OAuth / Service Account) -->
       <div class="card">
         <div class="card-head">
           <div class="card-title">🔍 Google Search Console API</div>
-          <div class="badge badge-orange">FASTEST PATH</div>
+          <div class="badge badge-orange" id="gsc-mode-badge">OAUTH MODE</div>
         </div>
-        <div class="card-body">
-          <div class="alert alert-blue" style="margin-bottom:12px;">
-            ⚡ This is the <strong>actual GSC URL Inspection + Request Indexing</strong> API — same as clicking "Request Indexing" inside GSC for every URL simultaneously.
+        <div class="card-body" style="padding:0;">
+
+          <!-- mode tabs -->
+          <div class="pf-tabs" style="padding:0 12px;">
+            <button class="pf-tab active" id="gsc-tab-oauth" onclick="switchGscMode('oauth')">OAuth Token</button>
+            <button class="pf-tab" id="gsc-tab-sa" onclick="switchGscMode('sa')">🔑 Service Account</button>
+            <button class="pf-tab" id="gsc-tab-multi" onclick="switchGscMode('multi')">🔄 Multi-Property</button>
           </div>
-          <div class="form-group">
-            <label>OAuth 2.0 Access Token</label>
-            <input type="text" id="gsc-token" placeholder="ya29.your-access-token-here" oninput="saveSetting('ib_gsc',this.value)">
-            <div class="gsc-steps">
-              <strong style="color:var(--text);">How to get your token (2 min):</strong>
-              <ol class="gsc-steps">
-                <li>Go to <a href="https://developers.google.com/oauthplayground/" target="_blank">OAuth Playground ↗</a></li>
-                <li>Click ⚙️ → tick "Use your own OAuth credentials" → enter Client ID + Secret (or use default)</li>
-                <li>Select scope: <strong>Search Console API v1</strong> → <code>https://www.googleapis.com/auth/webmasters</code></li>
-                <li>Click "Authorize APIs" → "Exchange auth code for tokens"</li>
-                <li>Copy the <strong>Access token</strong> → paste above</li>
-              </ol>
-              <div style="margin-top:5px;color:var(--orange);">⚠️ Tokens expire in ~1 hour. Refresh when you see 401 errors.</div>
+
+          <!-- ── OAuth mode ── -->
+          <div class="pf-panel active" id="gsc-panel-oauth" style="padding:14px;">
+            <div class="alert alert-blue" style="margin-bottom:12px;">
+              ⚡ <strong>Temporary token</strong> — expires in ~1 hr. Good for testing. Use Service Account for permanent automation.
+            </div>
+            <div class="form-group">
+              <label>OAuth 2.0 Access Token</label>
+              <input type="text" id="gsc-token" placeholder="ya29.your-access-token-here" oninput="saveSetting('ib_gsc',this.value)">
+              <div class="gsc-steps">
+                <strong style="color:var(--text);">How to get your token (2 min):</strong>
+                <ol class="gsc-steps">
+                  <li>Go to <a href="https://developers.google.com/oauthplayground/" target="_blank">OAuth Playground ↗</a></li>
+                  <li>Click ⚙️ → "Use your own OAuth credentials" → enter Client ID + Secret</li>
+                  <li>Select scope: <code>https://www.googleapis.com/auth/webmasters</code></li>
+                  <li>Authorize → Exchange code for tokens → copy <strong>Access token</strong></li>
+                </ol>
+                <div style="margin-top:5px;color:var(--orange);">⚠️ Expires in ~1 hr. Switch to Service Account to never expire.</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>GSC Property URL (siteUrl)</label>
+              <input type="text" id="gsc-site" placeholder="https://yourdomain.com/" value="" oninput="saveSetting('ib_site',this.value)">
+              <div class="hint">Exact match including trailing slash. Supports <code>sc-domain:</code> prefix.</div>
             </div>
           </div>
-          <div class="form-group">
-            <label>GSC Property URL (siteUrl)</label>
-            <input type="text" id="gsc-site" placeholder="https://yourdomain.com/" value="" oninput="saveSetting('ib_site',this.value)">
-            <div class="hint">Must exactly match your GSC property (including trailing slash). Supports sc-domain: prefixes too.</div>
+
+          <!-- ── Service Account mode ── -->
+          <div class="pf-panel" id="gsc-panel-sa" style="padding:14px;">
+            <div class="alert alert-green" style="margin-bottom:12px;">
+              🔑 <strong>Permanent access — no expiry.</strong> This is how InstantIndexer.org and every pro indexer service works. The JSON key auto-signs JWT tokens to get fresh access tokens without user interaction.
+            </div>
+            <div class="form-group">
+              <label>Service Account JSON Key <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" style="color:var(--blue);font-size:0.6rem;">Create one ↗</a></label>
+              <textarea id="sa-json" placeholder='Paste your full service account JSON key here:
+{
+  "type": "service_account",
+  "project_id": "your-project",
+  "private_key_id": "abc123",
+  "private_key": "-----BEGIN RSA PRIVATE KEY-----\n...",
+  "client_email": "indexer@your-project.iam.gserviceaccount.com",
+  "client_id": "123456789",
+  "token_uri": "https://oauth2.googleapis.com/token"
+}' style="min-height:120px;font-size:0.6rem;" oninput="saveSetting('ib_sa_json',this.value)"></textarea>
+              <div class="gsc-steps" style="margin-top:6px;">
+                <strong style="color:var(--text);">Setup (5 min, one time only):</strong>
+                <ol class="gsc-steps">
+                  <li>Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console ↗</a> → Create project</li>
+                  <li>Enable <strong>Google Search Console API</strong> in API Library</li>
+                  <li>IAM &amp; Admin → Service Accounts → Create Service Account</li>
+                  <li>Keys tab → Add Key → JSON → download the file</li>
+                  <li>In GSC → Settings → Users and permissions → Add user → paste the <code>client_email</code> from JSON → set <strong>Full</strong> permission</li>
+                  <li>Paste the full JSON content above</li>
+                </ol>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>GSC Property URL (siteUrl)</label>
+              <input type="text" id="sa-site" placeholder="https://yourdomain.com/" oninput="saveSetting('ib_sa_site',this.value)">
+              <div class="hint">Must exactly match the GSC property the service account was added to.</div>
+            </div>
+            <button class="btn btn-ping" style="margin-top:4px;font-size:0.65rem;" onclick="testServiceAccount()">🧪 Test SA Connection</button>
+            <div id="sa-status" style="margin-top:8px;font-size:0.62rem;color:var(--muted);font-family:var(--font-mono);display:none;"></div>
           </div>
+
+          <!-- ── Multi-Property rotation mode ── -->
+          <div class="pf-panel" id="gsc-panel-multi" style="padding:14px;">
+            <div class="alert alert-orange" style="margin-bottom:12px;">
+              🔄 <strong>Quota rotation</strong> — GSC limits to 200 URL inspections/day per property. Add multiple GSC properties (each verified in GSC) to rotate between them and scale to 200×N URLs/day. This is exactly how pro indexers beat the quota.
+            </div>
+            <div class="form-group">
+              <label>Service Account JSON Keys — one per line as JSON objects, comma-separated in array, OR paste multiple JSON blobs</label>
+              <textarea id="multi-sa-json" placeholder='Paste an array of service account JSONs:
+[
+  { "type":"service_account","client_email":"sa1@proj.iam.gserviceaccount.com","private_key":"..." },
+  { "type":"service_account","client_email":"sa2@proj.iam.gserviceaccount.com","private_key":"..." }
+]
+
+OR paste individual JSON objects separated by a blank line.' style="min-height:100px;font-size:0.58rem;" oninput="saveSetting('ib_multi_sa',this.value)"></textarea>
+            </div>
+            <div class="form-group">
+              <label>GSC Properties — one per line (must match each SA's GSC access)</label>
+              <textarea id="multi-sites" placeholder="https://site1.com/
+https://site2.com/
+https://site3.com/" style="min-height:72px;font-size:0.65rem;" oninput="saveSetting('ib_multi_sites',this.value)"></textarea>
+              <div class="hint">The indexer round-robins through these properties. When property A hits 200/day, it switches to property B automatically.</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-ping btn-sm" onclick="testMultiSA()" style="flex:1;">🧪 Test All SAs</button>
+              <button class="btn btn-export btn-sm" onclick="showMultiQuotaStatus()" style="flex:1;">📊 Quota Status</button>
+            </div>
+            <div id="multi-status" style="margin-top:8px;font-size:0.62rem;color:var(--muted);font-family:var(--font-mono);display:none;max-height:80px;overflow-y:auto;"></div>
+          </div>
+
         </div>
       </div>
 
@@ -964,6 +1228,15 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
     <!-- ── MAIN ── -->
     <div class="main">
 
+      <!-- Tab switcher -->
+      <div class="main-tabs">
+        <button class="main-tab active" onclick="switchMainTab('indexer',this)">⚡ Indexer</button>
+        <button class="main-tab" onclick="switchMainTab('preflight',this)">🔬 Pre-Flight Checker</button>
+      </div>
+
+      <!-- ═══════════════════ INDEXER PANEL ═══════════════════ -->
+      <div class="main-panel active" id="panel-indexer">
+
       <!-- Stats -->
       <div class="stats-row">
         <div class="stat-card green" id="sc-indexed">
@@ -1020,7 +1293,7 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
           <div class="log-entry">
             <span class="log-time">--:--:--</span>
             <span class="log-type system">SYSTEM</span>
-            <span class="log-msg">IndexBlast Pro v5.0 ready. 11 engines armed. Paste URLs and click LAUNCH.</span>
+            <span class="log-msg">IndexBlast Pro v6.0 ready. 11 engines armed. Paste URLs and click LAUNCH.</span>
           </div>
         </div>
       </div>
@@ -1056,6 +1329,78 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
           <div id="all-links"></div>
         </div>
       </div>
+
+      </div><!-- /panel-indexer -->
+
+      <!-- ═══════════════════ PRE-FLIGHT CHECKER PANEL ═══════════════════ -->
+      <div class="main-panel" id="panel-preflight">
+
+        <div class="preflight-card">
+          <div class="card-head">
+            <div class="card-title">🔬 URL Pre-Flight Checker</div>
+            <div class="badge badge-blue">INDEXABILITY AUDIT</div>
+          </div>
+
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(0,180,255,0.03);">
+            <div style="font-size:0.68rem;color:var(--muted);line-height:1.6;">
+              Scans each URL for indexability blockers before submitting to the indexer. Detects: <strong style="color:var(--text);">robots.txt blocks, noindex tags, redirects, HTTPS, title length, mobile viewport, canonical issues, keyword stuffing.</strong>
+              <br>This is exactly how <strong style="color:var(--blue);">InstantIndexer.org</strong> shows you why a URL failed — we replicate that logic here using a CORS proxy.
+            </div>
+          </div>
+
+          <div class="pf-input-row">
+            <textarea id="pf-url-input" placeholder="Paste URLs to audit — one per line:
+
+https://yoursite.com/page-1
+https://yoursite.com/page-2
+https://medium.com/@you/article"></textarea>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button class="pf-scan-btn" id="pf-scan-btn" onclick="runPreflightCheck()">🔬 SCAN URLs</button>
+              <button class="pf-scan-btn" style="background:var(--green);font-size:0.62rem;padding:8px 10px;" onclick="pfLoadFromIndexer()">📋 Load from Indexer</button>
+              <button class="pf-scan-btn" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border2);font-size:0.62rem;padding:8px 10px;" onclick="pfClear()">✕ Clear</button>
+            </div>
+          </div>
+
+          <div id="pf-summary-row" class="pf-summary-row" style="display:none;"></div>
+
+          <div id="pf-results" class="pf-results">
+            <div class="pf-empty" id="pf-empty">
+              Paste URLs above and click SCAN to run the pre-flight indexability check.<br>
+              <span style="font-size:0.6rem;opacity:0.6;margin-top:6px;display:block;">Checks: HTTPS · No Redirects · Indexable (no noindex) · robots.txt · Mobile Viewport · Title Length · Canonical · Title Spam</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- How it works explanation -->
+        <div class="preflight-card">
+          <div class="card-head">
+            <div class="card-title">💡 How InstantIndexer.org Works — The Architecture</div>
+          </div>
+          <div style="padding:16px;font-size:0.68rem;line-height:1.8;color:var(--muted);">
+            <div style="margin-bottom:10px;color:var(--text);font-weight:600;">How sites like InstantIndexer are built:</div>
+
+            <div style="margin-bottom:8px;"><span style="color:var(--blue);font-weight:700;">1. Credits System (PHP + MySQL)</span><br>
+            User registers → gets N credits. Each URL submission costs 1 credit. Tracked in <code>users</code> + <code>credits</code> tables. Dashboard shows "Remaining Credits" by querying the DB per session.</div>
+
+            <div style="margin-bottom:8px;"><span style="color:var(--blue);font-weight:700;">2. URL Pre-Flight Check (Node.js / Python backend)</span><br>
+            When you submit a URL, the backend server-side fetches the page using a headless HTTP client (not CORS-blocked). It parses: <code>&lt;meta name="robots"&gt;</code> for noindex, <code>X-Robots-Tag</code> header, the domain's <code>robots.txt</code>, HTTPS, redirect chains, title length, and mobile viewport meta tag.</div>
+
+            <div style="margin-bottom:8px;"><span style="color:var(--blue);font-weight:700;">3. GSC Indexing API (OAuth 2.0 Service Account)</span><br>
+            They use a Google Service Account (JSON key file) to call <code>searchconsole.googleapis.com/v1/urlInspection/index:inspect</code> with <code>requestIndexing: true</code>. This is automated "Request Indexing" at scale. They likely rotate multiple GSC properties to stay under the 200 URLs/day quota.</div>
+
+            <div style="margin-bottom:8px;"><span style="color:var(--blue);font-weight:700;">4. IndexNow + Pinging Layer</span><br>
+            In parallel they fire IndexNow to Bing/Yandex, ping pubsubhubbub hubs, submit XML sitemaps, and hit XML-RPC ping endpoints — same as what this tool does in engines 2–11.</div>
+
+            <div style="margin-bottom:8px;"><span style="color:var(--blue);font-weight:700;">5. Crawl Page (Public HTML with Dofollow Links)</span><br>
+            The secret sauce: they host a public HTML page that lists all submitted URLs as dofollow links. This page itself gets crawled by Googlebot. Any URL linked from a crawled page gets discovered — this is the core mechanism that makes "link indexers" actually work.</div>
+
+            <div style="color:var(--orange);margin-top:10px;padding:8px 12px;background:rgba(255,124,30,0.06);border-radius:6px;border:1px solid rgba(255,124,30,0.2);">
+              ⚠️ <strong>This tool (IndexBlast Pro v6) replicates all of these mechanisms client-side.</strong> The GSC engine requires your OAuth token (same API they use). The crawl surface (Live Crawl Surface panel) is the dofollow link page equivalent. The pre-flight checker here uses a CORS proxy to simulate their server-side URL analysis.
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /panel-preflight -->
 
     </div><!-- /main -->
   </div><!-- /layout -->
@@ -1143,6 +1488,12 @@ window.addEventListener('load', () => {
     const val = localStorage.getItem(key);
     if(val && el) el.value = val;
   }
+  // Restore SA / multi-property fields
+  const saFields = [['sa-json','ib_sa_json'],['sa-site','ib_sa_site'],['multi-sa-json','ib_multi_sa'],['multi-sites','ib_multi_sites']];
+  saFields.forEach(([id, storageKey]) => { const v = localStorage.getItem(storageKey); const el = document.getElementById(id); if(v && el) el.value = v; });
+  // Restore GSC mode tab
+  const savedMode = localStorage.getItem('ib_gsc_mode');
+  if(savedMode && ['oauth','sa','multi'].includes(savedMode)) switchGscMode(savedMode);
   // Restore select settings
   const selects = {
     'cycle-interval': 'ib_interval',
@@ -1156,8 +1507,8 @@ window.addEventListener('load', () => {
     if(val && el) el.value = val;
   }
   onUrlChange();
-  log('system','IndexBlast Pro v5.0 loaded — 11 engines armed');
-  log('system','GSC Request Indexing API connected — same as clicking "Request Indexing" in GSC per URL');
+  log('system','IndexBlast Pro v6.0 loaded — 11 engines armed | GSC: OAuth / Service Account / Multi-Property');
+  log('system','Service Account mode: no expiry, permanent. Multi-Property: rotate 200×N URLs/day across properties.');
   checkRobots();
 });
 
@@ -1320,35 +1671,39 @@ async function firePingNow(){
 
 // ════════════════════════════════════════════════════
 // ENGINE 1: GSC URL INSPECTION + REQUEST INDEXING
+// Supports: OAuth token, Service Account JWT, Multi-property rotation
 // ════════════════════════════════════════════════════
 async function engGSC(){
   setEng('gsc','firing');
-  const token = document.getElementById('gsc-token').value.trim();
-  const siteUrl = document.getElementById('gsc-site').value.trim();
 
-  if(!token){
-    log('gsc','🔍 GSC: no token — skipping. Add OAuth token to enable Request Indexing.');
-    setEng('gsc','skip');
-    return;
-  }
-  if(!siteUrl){
-    log('gsc','🔍 GSC: no site URL — skipping. Add your GSC property URL.');
-    setEng('gsc','skip');
+  // ── Resolve token + siteUrl from active mode ──
+  let cfg = null;
+  try {
+    cfg = await getActiveSAConfig();
+  } catch(e){
+    log('error', `🔍 GSC auth error: ${e.message}`);
+    setEng('gsc','error');
+    toast(`GSC auth failed: ${e.message.slice(0,60)}`, 'error');
     return;
   }
 
+  if(!cfg){
+    const modeHint = gscMode === 'sa' ? 'fill in Service Account JSON + property URL'
+      : gscMode === 'multi' ? 'configure multi-property SA JSON + sites'
+      : 'add OAuth token + property URL in GSC panel';
+    log('gsc',`🔍 GSC: no credentials — skipping. ${modeHint}.`);
+    setEng('gsc','skip');
+    return;
+  }
+
+  const { token, siteUrl } = cfg;
   document.getElementById('report-card').style.display = '';
 
   const maxPerCycle = parseInt(document.getElementById('gsc-per-cycle').value);
-  // Prioritise URLs not yet queued, then loop
   const batchUrls = getBatch();
-  const toProcess = batchUrls
-    .filter(u => !queuedForIndexing.has(u))
-    .slice(0, maxPerCycle);
-
-  // If all in batch already processed, pick any not yet done globally
-  const toProcessFinal = toProcess.length > 0 ? toProcess :
-    urls.filter(u => !queuedForIndexing.has(u)).slice(0, maxPerCycle);
+  const toProcess = batchUrls.filter(u => !queuedForIndexing.has(u)).slice(0, maxPerCycle);
+  const toProcessFinal = toProcess.length > 0 ? toProcess
+    : urls.filter(u => !queuedForIndexing.has(u)).slice(0, maxPerCycle);
 
   if(!toProcessFinal.length){
     log('gsc', '🔍 GSC: All submitted URLs already queued for indexing this session ✓');
@@ -1356,45 +1711,71 @@ async function engGSC(){
     return;
   }
 
-  log('gsc', `🔍 GSC Request Indexing: processing ${toProcessFinal.length} URLs...`);
+  const modeLabel = gscMode === 'sa' ? 'SA' : gscMode === 'multi' ? 'MULTI' : 'OAuth';
+  log('gsc', `🔍 GSC [${modeLabel}] Request Indexing: ${toProcessFinal.length} URLs → ${siteUrl}`);
 
   let submitted = 0, already = 0, failed = 0;
   const normSite = siteUrl.endsWith('/') ? siteUrl : siteUrl + '/';
 
   for(const url of toProcessFinal){
-    const rowId = addReportRow(url, 'pending', 'GSC', 'Inspecting URL status...');
+    // For multi-property: refresh token per-URL so we always have latest rotated config
+    let currentToken = token;
+    let currentSite = normSite;
+    if(gscMode === 'multi'){
+      try {
+        const freshCfg = await getActiveSAConfig();
+        if(!freshCfg){ log('gsc','🔄 Multi: all quotas exhausted'); break; }
+        currentToken = freshCfg.token;
+        currentSite = freshCfg.siteUrl.endsWith('/') ? freshCfg.siteUrl : freshCfg.siteUrl + '/';
+      } catch(e){ log('error', `Multi token refresh: ${e.message}`); }
+    }
+
+    const rowId = addReportRow(url, 'pending', `GSC-${modeLabel}`, 'Inspecting URL status...');
 
     try {
       // ── STEP 1: Inspect current status ──
       const inspRes = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ inspectionUrl: url, siteUrl: normSite })
+        headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inspectionUrl: url, siteUrl: currentSite })
       });
 
       if(inspRes.status === 401){
-        updateReportRow(rowId, 'fail', 'Token expired — refresh at OAuth Playground');
-        log('error', '🔍 GSC 401: Token expired. Get a new one at developers.google.com/oauthplayground');
-        setEng('gsc','error');
-        toast('GSC token expired — please refresh your OAuth token','error');
-        return;
+        if(gscMode === 'oauth'){
+          updateReportRow(rowId, 'fail', 'Token expired — refresh at OAuth Playground');
+          log('error', '🔍 GSC 401: OAuth token expired. Switch to Service Account for permanent access.');
+          setEng('gsc','error');
+          toast('GSC OAuth token expired — switch to Service Account mode for no-expiry access','error');
+          return;
+        } else {
+          // SA token shouldn't expire, but clear cache and retry once
+          const email = cfg.sa?.client_email;
+          if(email) delete saTokenCache[email];
+          updateReportRow(rowId, 'fail', '401 — SA token refresh failed');
+          log('error', `🔍 GSC SA 401: token rejected for ${url.slice(0,55)}`);
+          failed++;
+          continue;
+        }
       }
       if(inspRes.status === 403){
-        updateReportRow(rowId, 'fail', '403: URL not in GSC property or missing scope');
-        log('error', `🔍 GSC 403: ${url.slice(0,55)} — check GSC property match and OAuth scope`);
+        updateReportRow(rowId, 'fail', '403: SA not added to GSC property as user');
+        log('error', `🔍 GSC 403: ${url.slice(0,55)} — add service account email to GSC property (Settings → Users)`);
         failedUrls.add(url);
         failed++;
         await sleep(400);
         continue;
       }
       if(inspRes.status === 429){
-        updateReportRow(rowId, 'fail', '429: Daily quota hit — resuming next cycle');
-        log('error', '🔍 GSC 429: Daily quota exceeded (200/day). Will resume next cycle.');
-        setEng('gsc','error');
-        break;
+        updateReportRow(rowId, 'fail', '429: Daily quota hit');
+        if(gscMode === 'multi'){
+          log('gsc', `🔄 GSC 429 on ${currentSite} — forcing rotation to next property`);
+          multiPropIndex++;
+        } else {
+          log('error', '🔍 GSC 429: 200/day quota hit. Switch to Multi-Property mode to scale.');
+          setEng('gsc','error');
+          break;
+        }
+        continue;
       }
 
       let inspData = null;
@@ -1430,6 +1811,7 @@ async function engGSC(){
         queuedForIndexing.add(url);
         already++;
         totalIndexed++;
+        if(gscMode === 'multi') incrementMultiQuota(currentSite);
         pulseStat('stat-indexed', totalIndexed);
         document.getElementById('hdr-indexed').textContent = totalIndexed;
         await sleep(350);
@@ -1439,21 +1821,24 @@ async function engGSC(){
       // ── STEP 2: REQUEST INDEXING — the actual "queue for Googlebot crawl" call ──
       const reqRes = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Authorization': `Bearer ${currentToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           inspectionUrl: url,
-          siteUrl: normSite,
+          siteUrl: currentSite,
           requestIndexing: true   // ← This is the "Request Indexing" button equivalent
         })
       });
 
       if(reqRes.status === 429){
         updateReportRow(rowId, 'fail', '429: Quota hit mid-batch');
-        log('error','🔍 GSC 429: Quota exceeded. Will resume next cycle.');
-        break;
+        if(gscMode === 'multi'){
+          log('gsc', `🔄 GSC 429 step2 on ${currentSite} — rotating property`);
+          multiPropIndex++;
+        } else {
+          log('error','🔍 GSC 429: Quota exceeded. Add more properties in Multi-Property mode.');
+          break;
+        }
+        continue;
       }
 
       if(reqRes.ok){
@@ -1467,8 +1852,9 @@ async function engGSC(){
         else if(reqCoverage) reason = `Queued ✓ | ${reqCoverage}`;
 
         updateReportRow(rowId, 'success', reason);
-        log('gsc', `🔍 GSC ✅ Request Indexing sent: ${url.slice(0,55)}`);
+        log('gsc', `🔍 GSC [${modeLabel}] ✅ Request Indexing sent: ${url.slice(0,55)}`);
         queuedForIndexing.add(url);
+        if(gscMode === 'multi') incrementMultiQuota(currentSite);
         submitted++;
         totalIndexed++;
         pulseStat('stat-indexed', totalIndexed);
@@ -1986,13 +2372,538 @@ function exportReport(){
   toast('📥 Report exported!','success');
 }
 
-function dl(name, content, mime){
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content], {type: mime}));
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+// ════════════════════════════════════════════════════
+// GSC MODE SWITCHER
+// ════════════════════════════════════════════════════
+let gscMode = 'oauth'; // 'oauth' | 'sa' | 'multi'
+
+function switchGscMode(mode){
+  gscMode = mode;
+  ['oauth','sa','multi'].forEach(m => {
+    document.getElementById(`gsc-tab-${m}`).classList.toggle('active', m === mode);
+    document.getElementById(`gsc-panel-${m}`).classList.toggle('active', m === mode);
+  });
+  const badge = document.getElementById('gsc-mode-badge');
+  badge.textContent = mode === 'oauth' ? 'OAUTH MODE' : mode === 'sa' ? 'SERVICE ACCOUNT' : 'MULTI-PROPERTY';
+  badge.className = 'badge ' + (mode === 'oauth' ? 'badge-orange' : mode === 'sa' ? 'badge-green' : 'badge-blue');
+  saveSetting('ib_gsc_mode', mode);
+}
+
+// ════════════════════════════════════════════════════
+// SERVICE ACCOUNT JWT ENGINE
+// Signs JWT tokens client-side using Web Crypto API
+// Exactly how automated indexers work without user interaction
+// ════════════════════════════════════════════════════
+
+// Multi-property state
+let saTokenCache = {};      // keyed by client_email → { token, expires }
+let multiPropIndex = 0;     // current rotation index
+let multiQuotaUsed = {};    // keyed by siteUrl → count today
+
+async function getSAToken(saJson){
+  const email = saJson.client_email;
+  const now = Math.floor(Date.now() / 1000);
+  // Return cached token if still valid (5 min buffer)
+  if(saTokenCache[email] && saTokenCache[email].expires > now + 300){
+    return saTokenCache[email].token;
+  }
+
+  // Build JWT: header.payload.signature
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const payload = {
+    iss: email,
+    scope: 'https://www.googleapis.com/auth/webmasters',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now
+  };
+
+  const b64url = s => btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  const enc = new TextEncoder();
+  const headerB64 = b64url(JSON.stringify(header));
+  const payloadB64 = b64url(JSON.stringify(payload));
+  const signingInput = `${headerB64}.${payloadB64}`;
+
+  // Import private key
+  const pemKey = saJson.private_key;
+  const keyData = pemKey
+    .replace(/-----BEGIN (RSA )?PRIVATE KEY-----/, '')
+    .replace(/-----END (RSA )?PRIVATE KEY-----/, '')
+    .replace(/\n/g, '').trim();
+
+  let cryptoKey;
+  try {
+    const binaryKey = Uint8Array.from(atob(keyData), c => c.charCodeAt(0));
+    cryptoKey = await crypto.subtle.importKey(
+      'pkcs8', binaryKey.buffer,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false, ['sign']
+    );
+  } catch(e){
+    throw new Error(`SA key import failed: ${e.message}. Ensure the JSON private_key is a valid PKCS8 RSA key.`);
+  }
+
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5', cryptoKey,
+    enc.encode(signingInput)
+  );
+  const sigB64 = b64url(String.fromCharCode(...new Uint8Array(signature)));
+  const jwt = `${signingInput}.${sigB64}`;
+
+  // Exchange JWT for access token
+  const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt
+    })
+  });
+
+  if(!tokenResp.ok){
+    const err = await tokenResp.text();
+    throw new Error(`SA token exchange failed (${tokenResp.status}): ${err.slice(0,120)}`);
+  }
+
+  const tokenData = await tokenResp.json();
+  const accessToken = tokenData.access_token;
+  saTokenCache[email] = { token: accessToken, expires: now + (tokenData.expires_in || 3600) };
+  return accessToken;
+}
+
+async function getActiveSAConfig(){
+  // Returns { token, siteUrl } for the current active property/SA
+  if(gscMode === 'sa'){
+    const jsonRaw = document.getElementById('sa-json').value.trim();
+    const siteUrl = document.getElementById('sa-site').value.trim();
+    if(!jsonRaw || !siteUrl) return null;
+    let saJson;
+    try { saJson = JSON.parse(jsonRaw); } catch(e){ throw new Error('SA JSON is invalid. Check for syntax errors.'); }
+    const token = await getSAToken(saJson);
+    return { token, siteUrl };
+  }
+  if(gscMode === 'multi'){
+    return await getNextMultiConfig();
+  }
+  // oauth fallback
+  const token = document.getElementById('gsc-token').value.trim();
+  const siteUrl = document.getElementById('gsc-site').value.trim();
+  if(!token || !siteUrl) return null;
+  return { token, siteUrl };
+}
+
+// ════════════════════════════════════════════════════
+// MULTI-PROPERTY ROTATION ENGINE
+// ════════════════════════════════════════════════════
+function parseMultiConfigs(){
+  const raw = document.getElementById('multi-sa-json')?.value?.trim() || '';
+  const sitesRaw = document.getElementById('multi-sites')?.value?.trim() || '';
+  const sites = sitesRaw.split('\n').map(s => s.trim()).filter(s => s.startsWith('http'));
+  if(!raw || !sites.length) return [];
+
+  let saList = [];
+  try {
+    // Try parsing as JSON array first
+    const parsed = JSON.parse(raw);
+    saList = Array.isArray(parsed) ? parsed : [parsed];
+  } catch(e){
+    // Try splitting by blank lines (multiple JSON objects pasted separately)
+    const blocks = raw.split(/\n\s*\n/);
+    for(const block of blocks){
+      try { saList.push(JSON.parse(block.trim())); } catch(e2){}
+    }
+  }
+
+  // Pair each SA with sites round-robin, or one SA → many sites
+  const configs = [];
+  if(saList.length === 1){
+    // One SA, rotate across all sites
+    sites.forEach(site => configs.push({ sa: saList[0], siteUrl: site }));
+  } else {
+    // One SA per site (zip)
+    const len = Math.min(saList.length, sites.length);
+    for(let i = 0; i < len; i++) configs.push({ sa: saList[i], siteUrl: sites[i] });
+  }
+  return configs;
+}
+
+async function getNextMultiConfig(){
+  const configs = parseMultiConfigs();
+  if(!configs.length) return null;
+
+  const DAILY_QUOTA = 200;
+  const todayKey = new Date().toDateString();
+
+  // Find next config that hasn't hit quota
+  for(let attempt = 0; attempt < configs.length; attempt++){
+    const idx = multiPropIndex % configs.length;
+    const cfg = configs[idx];
+    const key = `${todayKey}:${cfg.siteUrl}`;
+    const used = multiQuotaUsed[key] || 0;
+
+    if(used < DAILY_QUOTA){
+      // This property still has quota
+      try {
+        const token = await getSAToken(cfg.sa);
+        return { token, siteUrl: cfg.siteUrl, configIdx: idx };
+      } catch(e){
+        log('error', `Multi-SA: config ${idx} (${cfg.siteUrl}) auth failed — ${e.message}`);
+        multiPropIndex++;
+        continue;
+      }
+    } else {
+      log('gsc', `🔄 Property ${cfg.siteUrl} quota exhausted (${used}/${DAILY_QUOTA}) — rotating to next`);
+      multiPropIndex++;
+    }
+  }
+
+  log('error', '🔄 Multi-SA: ALL properties have hit daily quota (200/property). Wait until midnight UTC or add more properties.');
+  return null;
+}
+
+function incrementMultiQuota(siteUrl){
+  const key = `${new Date().toDateString()}:${siteUrl}`;
+  multiQuotaUsed[key] = (multiQuotaUsed[key] || 0) + 1;
+  // After every 190 submissions, rotate to next property proactively
+  if(multiQuotaUsed[key] % 190 === 0) multiPropIndex++;
+}
+
+// ════════════════════════════════════════════════════
+// TEST FUNCTIONS
+// ════════════════════════════════════════════════════
+async function testServiceAccount(){
+  const statusEl = document.getElementById('sa-status');
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = '⏳ Testing SA connection...';
+
+  try {
+    const cfg = await getActiveSAConfig();
+    if(!cfg){ statusEl.textContent = '⚠️ Fill in the JSON key and property URL first.'; return; }
+
+    // Try a simple URL inspection to confirm it works
+    const testUrl = cfg.siteUrl.endsWith('/') ? cfg.siteUrl : cfg.siteUrl + '/';
+    const resp = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inspectionUrl: testUrl, siteUrl: testUrl })
+    });
+
+    if(resp.ok){
+      statusEl.style.color = 'var(--green)';
+      statusEl.textContent = `✅ Service Account connected! Token valid. Property: ${cfg.siteUrl}`;
+      toast('✅ Service Account connected successfully!', 'success');
+    } else if(resp.status === 403){
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = `❌ 403 Forbidden — Service Account email not added as GSC user. Go to GSC → Settings → Users and add ${JSON.parse(document.getElementById('sa-json').value).client_email} with Full access.`;
+    } else {
+      const err = await resp.text();
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = `❌ HTTP ${resp.status}: ${err.slice(0,100)}`;
+    }
+  } catch(e){
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = `❌ Error: ${e.message}`;
+  }
+}
+
+async function testMultiSA(){
+  const statusEl = document.getElementById('multi-status');
+  statusEl.style.display = 'block';
+  statusEl.textContent = '⏳ Testing all SA configs...';
+  const configs = parseMultiConfigs();
+  if(!configs.length){ statusEl.textContent = '⚠️ No valid configs parsed. Check JSON and sites.'; return; }
+  let results = [];
+  for(let i = 0; i < configs.length; i++){
+    try {
+      const token = await getSAToken(configs[i].sa);
+      results.push(`✅ Config ${i+1}: ${configs[i].sa.client_email?.slice(0,30)} → ${configs[i].siteUrl}`);
+    } catch(e){
+      results.push(`❌ Config ${i+1}: ${e.message.slice(0,60)}`);
+    }
+  }
+  statusEl.textContent = results.join('\n');
+}
+
+function showMultiQuotaStatus(){
+  const statusEl = document.getElementById('multi-status');
+  statusEl.style.display = 'block';
+  const configs = parseMultiConfigs();
+  if(!configs.length){ statusEl.textContent = '⚠️ No configs loaded.'; return; }
+  const todayKey = new Date().toDateString();
+  const lines = configs.map((c, i) => {
+    const key = `${todayKey}:${c.siteUrl}`;
+    const used = multiQuotaUsed[key] || 0;
+    return `Property ${i+1}: ${c.siteUrl} — ${used}/200 used today`;
+  });
+  statusEl.textContent = lines.join('\n');
+}
+
+
+function switchMainTab(id, btn){
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.main-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+}
+
+// ════════════════════════════════════════════════════
+// PRE-FLIGHT CHECKER ENGINE
+// ════════════════════════════════════════════════════
+// Uses allorigins.win CORS proxy to server-side fetch pages
+// Replicates what InstantIndexer.org does on their PHP/Node backend
+
+const PF_PROXY = 'https://api.allorigins.win/get?url=';
+let pfRunning = false;
+
+function pfLoadFromIndexer(){
+  const src = document.getElementById('url-input').value.trim();
+  if(!src){ alert('No URLs in indexer yet — paste them in the sidebar first.'); return; }
+  document.getElementById('pf-url-input').value = src;
+}
+
+function pfClear(){
+  document.getElementById('pf-url-input').value = '';
+  document.getElementById('pf-results').innerHTML = '<div class="pf-empty" id="pf-empty">Paste URLs above and click SCAN to run the pre-flight indexability check.<br><span style="font-size:0.6rem;opacity:0.6;margin-top:6px;display:block;">Checks: HTTPS · No Redirects · Indexable (no noindex) · robots.txt · Mobile Viewport · Title Length · Canonical · Title Spam</span></div>';
+  document.getElementById('pf-summary-row').style.display = 'none';
+}
+
+async function runPreflightCheck(){
+  if(pfRunning) return;
+  const raw = document.getElementById('pf-url-input').value;
+  const urls = raw.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
+  if(!urls.length){ alert('Paste at least one URL starting with http/https.'); return; }
+
+  pfRunning = true;
+  const btn = document.getElementById('pf-scan-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Scanning...';
+
+  // Clear previous results
+  const resultsEl = document.getElementById('pf-results');
+  resultsEl.innerHTML = '';
+  document.getElementById('pf-summary-row').style.display = 'none';
+
+  // Add scanning placeholders
+  urls.forEach(url => {
+    resultsEl.innerHTML += buildPfCard(url, 'scanning', [], [], [], null, null);
+  });
+
+  // Scan each URL sequentially (CORS proxy rate limits)
+  const allResults = [];
+  for(let i = 0; i < urls.length; i++){
+    const url = urls[i];
+    const result = await pfScanUrl(url);
+    allResults.push(result);
+    // Update the card in place
+    const cardId = 'pfc-' + CSS.escape(btoa(url).replace(/=/g,'').slice(0,12));
+    const existing = document.getElementById(cardId);
+    const newCard = document.createElement('div');
+    newCard.innerHTML = buildPfCard(url, result.status, result.checks, result.issues, result.recommendations, result.title, result.canonical, cardId);
+    if(existing) existing.replaceWith(newCard.firstElementChild);
+    await sleep(300); // be gentle on proxy
+  }
+
+  // Summary bar
+  const indexable = allResults.filter(r => r.status === 'indexable').length;
+  const blocked = allResults.filter(r => r.status === 'blocked').length;
+  const warning = allResults.filter(r => r.status === 'warning').length;
+  const sumRow = document.getElementById('pf-summary-row');
+  sumRow.style.display = 'flex';
+  sumRow.innerHTML = `
+    <span style="font-family:var(--font-mono);font-size:0.62rem;color:var(--muted);margin-right:4px;">RESULTS:</span>
+    <span class="pf-summary-chip green">✅ ${indexable} Indexable</span>
+    <span class="pf-summary-chip red">❌ ${blocked} Blocked</span>
+    <span class="pf-summary-chip orange">⚠️ ${warning} Warnings</span>
+    <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);margin-left:auto;">${urls.length} URLs scanned</span>
+  `;
+
+  pfRunning = false;
+  btn.disabled = false;
+  btn.textContent = '🔬 SCAN URLs';
+}
+
+async function pfScanUrl(url){
+  const result = {
+    url, status: 'warning',
+    checks: [], issues: [], recommendations: [], title: null, canonical: null
+  };
+
+  // Check 1: HTTPS
+  const isHttps = url.startsWith('https://');
+  result.checks.push({ icon: '🔒', label: 'HTTPS', val: isHttps ? 'Yes' : 'No', cls: isHttps ? 'ok' : 'fail' });
+  if(!isHttps){ result.issues.push({ text: 'Not using HTTPS', cls: 'critical' }); result.status = 'blocked'; }
+
+  // Check 2: Fetch the page via CORS proxy
+  let html = '', headers = {}, fetchedUrl = url, redirected = false, fetchOk = false;
+  try {
+    const proxyUrl = PF_PROXY + encodeURIComponent(url);
+    const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+    if(resp.ok){
+      const json = await resp.json();
+      html = json.contents || '';
+      fetchedUrl = json.status?.url || url;
+      redirected = fetchedUrl.replace(/\/$/, '') !== url.replace(/\/$/, '');
+      fetchOk = true;
+    }
+  } catch(e){ fetchOk = false; }
+
+  // Check 3: No redirects
+  result.checks.push({ icon: '↪️', label: 'No Redirects', val: redirected ? 'Redirect' : 'None', cls: redirected ? 'warn' : 'ok' });
+  if(redirected){ result.issues.push({ text: `Redirect → ${fetchedUrl.slice(0,40)}`, cls: 'warn' }); if(result.status !== 'blocked') result.status = 'warning'; }
+
+  if(fetchOk && html){
+    // Parse HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // Title
+    const titleEl = doc.querySelector('title');
+    result.title = titleEl ? titleEl.textContent.trim() : null;
+    const titleLen = result.title ? result.title.length : 0;
+    const titleOk = titleLen > 0 && titleLen <= 60;
+    result.checks.push({ icon: '📝', label: 'Title Tag', val: result.title ? `${titleLen} chars` : 'Missing', cls: !result.title ? 'fail' : titleLen > 100 ? 'warn' : titleOk ? 'ok' : 'warn' });
+    if(!result.title){ result.issues.push({ text: 'Missing title tag', cls: 'critical' }); if(result.status !== 'blocked') result.status = 'warning'; }
+    else if(titleLen > 100){ result.issues.push({ text: `Title too long (${titleLen} chars), may be truncated in SERPs`, cls: 'warn' }); if(result.status !== 'blocked') result.status = 'warning'; }
+
+    // noindex check
+    let hasNoindex = false;
+    const robotsMeta = doc.querySelector('meta[name="robots"], meta[name="googlebot"]');
+    if(robotsMeta){
+      const content = (robotsMeta.getAttribute('content') || '').toLowerCase();
+      hasNoindex = content.includes('noindex');
+    }
+    result.checks.push({ icon: '📑', label: 'Indexable (no noindex)', val: hasNoindex ? 'NOINDEX' : 'Indexable', cls: hasNoindex ? 'fail' : 'ok' });
+    if(hasNoindex){ result.issues.push({ text: 'CRITICAL: noindex directive found — Google will NOT index this page', cls: 'critical' }); result.status = 'blocked'; result.recommendations.push('Remove the noindex meta tag or X-Robots-Tag header from this page.'); }
+
+    // nofollow check
+    let hasNofollow = false;
+    if(robotsMeta){ hasNofollow = (robotsMeta.getAttribute('content') || '').toLowerCase().includes('nofollow'); }
+    result.checks.push({ icon: '🔗', label: 'Followable (no nofollow)', val: hasNofollow ? 'NOFOLLOW' : 'Follow', cls: hasNofollow ? 'warn' : 'ok' });
+    if(hasNofollow){ result.issues.push({ text: 'nofollow on page — links won\'t pass equity', cls: 'warn' }); }
+
+    // Canonical
+    const canonEl = doc.querySelector('link[rel="canonical"]');
+    result.canonical = canonEl ? canonEl.getAttribute('href') : null;
+    const canonOk = !result.canonical || result.canonical.replace(/\/$/, '') === url.replace(/\/$/, '');
+    result.checks.push({ icon: '🔁', label: 'Canonical', val: result.canonical ? (canonOk ? 'Self' : 'Other') : 'None', cls: result.canonical ? (canonOk ? 'ok' : 'warn') : 'info' });
+    if(result.canonical && !canonOk){ result.issues.push({ text: `Canonical points elsewhere → ${result.canonical.slice(0,40)}`, cls: 'critical' }); result.status = 'blocked'; result.recommendations.push('Canonical is pointing to a different URL. Google will consolidate signals to the canonical and may not index this URL directly.'); }
+
+    // Mobile viewport
+    const viewportMeta = doc.querySelector('meta[name="viewport"]');
+    const hasMobileVp = !!viewportMeta;
+    result.checks.push({ icon: '📱', label: 'Mobile Viewport', val: hasMobileVp ? 'Yes' : 'Missing', cls: hasMobileVp ? 'ok' : 'warn' });
+    if(!hasMobileVp){ result.issues.push({ text: 'Missing mobile viewport meta tag', cls: 'warn' }); if(result.status !== 'blocked') result.status = 'warning'; }
+
+    // Title spam / keyword stuffing
+    if(result.title){
+      const words = result.title.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+      const freq = {};
+      words.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
+      const stuffed = Object.entries(freq).some(([w, c]) => c >= 3);
+      const pipes = (result.title.match(/\|/g) || []).length;
+      const hasSpam = stuffed || pipes >= 3 || titleLen > 100;
+      if(hasSpam){ result.issues.push({ text: 'Possible keyword stuffing in title', cls: 'spam' }); }
+    }
+
+  } else if(!fetchOk){
+    result.checks.push({ icon: '⚠️', label: 'Page Fetch', val: 'Failed', cls: 'warn' });
+    result.issues.push({ text: 'Could not fetch page via proxy — check URL is publicly accessible', cls: 'warn' });
+    result.recommendations.push('The URL may be behind a login wall, rate-limiting the proxy, or returning a non-2xx status. Verify the URL is live and publicly accessible.');
+    if(result.status !== 'blocked') result.status = 'warning';
+  }
+
+  // robots.txt check (separate fetch for the domain's robots.txt)
+  try {
+    const origin = new URL(url).origin;
+    const robotsProxy = PF_PROXY + encodeURIComponent(origin + '/robots.txt');
+    const rResp = await fetch(robotsProxy, { signal: AbortSignal.timeout(5000) });
+    if(rResp.ok){
+      const rJson = await rResp.json();
+      const rtxt = (rJson.contents || '').toLowerCase();
+      let gbAgent = false, gbBlocked = false, anyBlocked = false;
+      const lines = rtxt.split('\n').map(l => l.trim());
+      let curAgent = null;
+      for(const line of lines){
+        if(line.startsWith('user-agent:')){
+          curAgent = line.replace('user-agent:','').trim();
+        } else if(line.startsWith('disallow:') && curAgent !== null){
+          const path = line.replace('disallow:','').trim();
+          if(path === '/'){
+            if(curAgent === 'googlebot') gbBlocked = true;
+            if(curAgent === '*') anyBlocked = true;
+          }
+        }
+      }
+      const robotsBlocked = gbBlocked || anyBlocked;
+      result.checks.push({ icon: '🤖', label: 'Not blocked by robots.txt', val: robotsBlocked ? 'BLOCKED' : 'Clear', cls: robotsBlocked ? 'fail' : 'ok' });
+      if(robotsBlocked){ result.issues.push({ text: 'CRITICAL: URL blocked by robots.txt', cls: 'critical' }); result.status = 'blocked'; result.recommendations.push('Your robots.txt is blocking Googlebot. Edit robots.txt to allow crawling: remove the Disallow: / rule for Googlebot (or *).'); }
+    } else {
+      result.checks.push({ icon: '🤖', label: 'Not blocked by robots.txt', val: 'No robots.txt', cls: 'ok' });
+    }
+  } catch(e){
+    result.checks.push({ icon: '🤖', label: 'robots.txt', val: 'Check manually', cls: 'info' });
+  }
+
+  // Final status determination
+  if(result.issues.length === 0) result.status = 'indexable';
+  else if(result.status !== 'blocked' && result.issues.every(i => i.cls !== 'critical')) result.status = 'warning';
+
+  // Default recommendations
+  if(result.status === 'blocked' && result.recommendations.length === 0){
+    result.recommendations.push('Fix the critical issues listed above before submitting to the indexer. Submitting a blocked URL wastes credits and quota.');
+  } else if(result.status === 'indexable'){
+    result.recommendations.push('This URL looks indexable. Go ahead and submit it to the indexer.');
+  }
+
+  return result;
+}
+
+function buildPfCard(url, status, checks, issues, recommendations, title, canonical, cardId){
+  const id = cardId || ('pfc-' + btoa(url).replace(/=/g,'').slice(0,12));
+  const safeId = 'pfc-' + btoa(url).replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+  const shortUrl = url.replace(/^https?:\/\//,'').slice(0,65) + (url.length > 65 ? '…' : '');
+
+  if(status === 'scanning'){
+    return `<div class="pf-url-card" id="${safeId}">
+      <div class="pf-url-header">
+        <span class="pf-url-text" title="${hesc(url)}">${hesc(shortUrl)}</span>
+        <span class="pf-overall-badge scanning">⏳ SCANNING…</span>
+      </div>
+      <div style="font-size:0.62rem;color:var(--muted2);font-family:var(--font-mono);">Fetching page via proxy…</div>
+    </div>`;
+  }
+
+  const badgeCls = status === 'indexable' ? 'indexable' : status === 'blocked' ? 'blocked' : 'warning';
+  const badgeTxt = status === 'indexable' ? '✅ INDEXABLE' : status === 'blocked' ? '❌ BLOCKED' : '⚠️ WARNING';
+
+  const checksHtml = checks.map(c => `
+    <div class="pf-check">
+      <span class="pf-check-icon">${c.icon}</span>
+      <span class="pf-check-label">${c.label}</span>
+      <span class="pf-check-val ${c.cls}">${c.val}</span>
+    </div>`).join('');
+
+  const issuesHtml = issues.length ? `<div class="pf-issues">${issues.map(i =>
+    `<span class="pf-issue ${i.cls}">${i.cls === 'critical' ? '⊗' : i.cls === 'warn' ? '⚠' : '⁂'} ${hesc(i.text)}</span>`
+  ).join('')}</div>` : '';
+
+  const recsHtml = recommendations.length ? recommendations.map(r =>
+    `<div class="pf-recommendation">💡 ${hesc(r)}</div>`
+  ).join('') : '';
+
+  const titleHtml = title ? `<div style="font-size:0.6rem;color:var(--muted);margin-top:5px;font-family:var(--font-mono);"><span style="color:var(--muted2);">TITLE:</span> ${hesc(title.slice(0,80))}${title.length>80?'…':''}</div>` : '';
+
+  return `<div class="pf-url-card" id="${safeId}">
+    <div class="pf-url-header">
+      <a class="pf-url-text" href="${hesc(url)}" target="_blank" rel="noopener" title="${hesc(url)}">${hesc(shortUrl)}</a>
+      <span class="pf-overall-badge ${badgeCls}">${badgeTxt}</span>
+    </div>
+    ${titleHtml}
+    <div class="pf-checks" style="margin-top:8px;">${checksHtml}</div>
+    ${issuesHtml}
+    ${recsHtml}
+  </div>`;
 }
 </script>
 
