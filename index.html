@@ -1429,16 +1429,16 @@ window.addEventListener('load', () => {
   const savedGscPer = localStorage.getItem('ic_gscper');
   if(savedGscPer) document.getElementById('gsc-per-cycle').value = savedGscPer;
 
-  onUrlChange();
-  onGscChange();
-  buildCrawlSurface();
-
-  // Load short link map from localStorage (Supabase sync happens after connect)
+  // Load short link map FIRST — must exist before buildCrawlSurface renders the grid
   try {
     const saved = JSON.parse(localStorage.getItem('ic_shortmap') || '{}');
     Object.assign(shortMap, saved);
     Object.entries(saved).forEach(([orig, code]) => { shortMapRev[code] = orig; });
   } catch(e){}
+
+  onUrlChange();
+  onGscChange();
+  buildCrawlSurface();
 
   log('system', 'IndexCore loaded — 5-step real indexing engine ready');
   log('system', 'Step ①: Add URLs  →  ②③: Pings fire  →  ④⑤: GSC tracks indexing status');
@@ -2938,6 +2938,7 @@ async function sbConnectSilent(){
       const dot = document.getElementById('sb-dot');
       if(dot) dot.className = 'sb-status-dot connected';
       await sbLoadAll();
+      buildCrawlSurface(); // re-render grid now that short codes are loaded from Supabase
       log('system', '⚡ Supabase auto-connected — data synced');
     }
   } catch(e){
