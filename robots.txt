@@ -1,2 +1,65 @@
+# robots.txt — indexernow.vercel.app
+# Strategy: Full open access for all crawlers.
+# Sitemap declared at root so Googlebot picks it up immediately.
+
 User-agent: *
 Allow: /
+
+# Priority crawler directives
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Googlebot-Video
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: facebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# SEO audit bots — allow full access for backlink discovery
+User-agent: AhrefsBot
+Allow: /
+
+User-agent: SemrushBot
+Allow: /
+
+User-agent: MJ12bot
+Allow: /
+
+User-agent: DotBot
+Allow: /
+
+User-agent: Magestic-SEO
+Allow: /
+
+# Sitemap location — submit to all major search engines
+Sitemap: https://indexernow.vercel.app/sitemap.xml
+Sitemap: https://indexernow.vercel.app/?sitemap=xml
