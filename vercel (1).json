@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/link/(?<code>[a-z0-9]{3,12})$",
+      "dest": "/api/link/[code]"
+    }
+  ],
+  "functions": {
+    "api/link/[code].js": {
+      "runtime": "edge"
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    }
+  ]
+}
