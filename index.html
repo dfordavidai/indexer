@@ -1,13 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="refresh" id="meta-refresh" content="1500">
-<meta name="revisit-after" content="5 minutes">
-  <meta name="google-site-verification" content="fNgJ738tmLnWi3H9eflzwM4xqIgsQxeFOEPZ7rjKJjg" />
+<meta name="revisit-after" content="20 minutes">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-<meta name="googlebot" content="index, follow, max-snippet:-1">
+<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <meta name="bingbot" content="index, follow">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -916,8 +916,54 @@ body::after {
 }
 .stat-pulse { animation: statPulse 0.3s ease; }
 
-/* Export button row */
-.export-row {
+/* ── CRAWL REPORT ── */
+.cr-row {
+  display: flex;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  align-items: flex-start;
+  animation: logSlide 0.3s ease;
+}
+.cr-row.success { border-color: rgba(0,255,136,0.25); }
+.cr-row.fail    { border-color: rgba(255,68,85,0.25); }
+.cr-row.pending { border-color: rgba(255,165,0,0.2); }
+.cr-badge {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  min-width: 56px;
+  text-align: center;
+}
+.cr-badge.success { background: rgba(0,255,136,0.15); color: var(--accent); }
+.cr-badge.fail    { background: rgba(255,68,85,0.15); color: var(--danger); }
+.cr-badge.pending { background: rgba(255,165,0,0.12); color: var(--warning); animation: blink 0.8s ease-in-out infinite; }
+.cr-url {
+  flex: 1;
+  color: var(--accent2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+}
+.cr-reason {
+  font-size: 0.65rem;
+  color: var(--muted);
+  flex-shrink: 0;
+  max-width: 280px;
+  text-align: right;
+  line-height: 1.4;
+}
+.cr-reason.error-reason { color: var(--danger); }
+.cr-time { color: var(--muted2); flex-shrink: 0; font-size: 0.62rem; min-width: 56px; }
+.cr-engine { color: var(--accent3); flex-shrink: 0; font-size: 0.62rem; min-width: 72px; }
+
   display: flex;
   gap: 8px;
   margin-top: 10px;
@@ -1055,18 +1101,18 @@ https://linkedin.com/posts/you-12345"
 
           <div class="key-input-wrap">
             <label>IndexNow API Key <span style="color:var(--accent);font-size:0.6rem;">(Get free at indexnow.org)</span></label>
-            <input type="text" id="indexnow-key" placeholder="your-indexnow-api-key-here" value="">
+            <input type="text" id="indexnow-key" placeholder="your-indexnow-api-key-here" value="ccd83e40884e44efbc65d9036eb6a967">
             <div class="key-hint">⚡ With your key: Bing + Yandex index within 2–5 minutes. Without: fallback ping mode only.</div>
           </div>
 
           <div class="setting-item" style="margin-bottom:14px;">
             <label>Your Site Domain (for sitemap)</label>
-            <input type="text" id="site-domain" placeholder="yourdomain.com" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:7px 10px;border-radius:7px;font-size:0.78rem;outline:none;font-family:var(--font-body);">
+            <input type="text" id="site-domain" placeholder="yourdomain.com" value="indexernow.vercel.app" style="width:100%;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:7px 10px;border-radius:7px;font-size:0.78rem;outline:none;font-family:var(--font-body);">
           </div>
 
           <div class="key-input-wrap">
             <label>Google Search Console Access Token <span style="color:var(--accent3);font-size:0.6rem;">(Fastest Google path — optional)</span></label>
-            <input type="text" id="gsc-token" placeholder="ya29.your-oauth-token-from-gsc" value="">
+            <input type="text" id="gsc-token" placeholder="ya29.your-oauth-token-from-gsc" value="ya29.a0Aa7MYioEpEuGGTP09dVdL7sJEkLjlKlKEvAgvm2z9gi7CRCxvvaYkgZ9MVFB39zx3h6CB6mvAu0EAo6jGKJ2kqDXiddgpOanhsDig8DJSUJ3uMyNqq4BzFnIqEPp6Xm4QmuPjioY_AQBMl7mqUvZRYXmkmx1uwgYjRI-JVfFFuJv-dOlGuqStwd4cNAQ-J9MX7An1igaCgYKAQsSARYSFQHGX2MiRaZNHHmE_OB7GVVKrppQQw0206">
             <div class="key-hint">🔍 GSC API: Direct URL inspection trigger. Get token via <a href="https://developers.google.com/oauthplayground/" target="_blank" style="color:var(--accent2)">OAuth Playground</a> → Google Search Console API v1 → urlInspection.index.inspect</div>
           </div>
 
@@ -1243,6 +1289,24 @@ https://linkedin.com/posts/you-12345"
         </div>
       </div>
 
+      <!-- ── CRAWL REPORT PANEL ── -->
+      <div class="log-card" id="crawl-report-card" style="display:none;">
+        <div class="log-header" style="background:linear-gradient(135deg,rgba(0,255,136,0.06),transparent);">
+          <div class="log-title">📋 Per-URL Crawl Report</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-family:var(--font-mono);font-size:0.68rem;color:var(--muted);">
+              ✅ <span id="report-success-count">0</span> success &nbsp;
+              ❌ <span id="report-fail-count">0</span> failed
+            </span>
+            <button class="btn btn-sm btn-secondary" onclick="exportCrawlReport()">📥 Export Report</button>
+            <button class="btn btn-sm btn-danger" onclick="clearCrawlReport()">Clear</button>
+          </div>
+        </div>
+        <div id="crawl-report-body" style="max-height:420px;overflow-y:auto;padding:10px;font-family:var(--font-mono);font-size:0.68rem;">
+          <!-- rows injected by JS -->
+        </div>
+      </div>
+
     </div><!-- /right -->
   </div><!-- /main-grid -->
 
@@ -1293,6 +1357,9 @@ let enginesCompleted = 0;
 let serviceWorkerRegistered = false;
 let autoscroll = true;
 let logEntries = []; // for export
+let crawlReportEntries = []; // per-URL crawl report
+let reportSuccessCount = 0;
+let reportFailCount = 0;
 
 const TOTAL_ENGINES = 11;
 
@@ -1375,11 +1442,88 @@ function escapeXMLStatic(str){
 }
 
 // ═══════════════════════════════════════════════════════
+// ROBOTS.TXT DIAGNOSTIC
+// Fetches the site's robots.txt and warns if Googlebot is blocked
+// ═══════════════════════════════════════════════════════
+async function checkRobotsTxt() {
+  const domainInput = document.getElementById('site-domain');
+  const domain = domainInput ? domainInput.value.trim() : '';
+
+  if (!domain) {
+    log('system', '⚠️ robots.txt check skipped — no site domain configured');
+    return;
+  }
+
+  // Normalise: ensure https:// prefix
+  const base = domain.startsWith('http') ? domain.replace(/\/$/, '') : `https://${domain.replace(/\/$/, '')}`;
+  const robotsUrl = `${base}/robots.txt`;
+
+  log('system', `🤖 Checking robots.txt → ${robotsUrl}`);
+
+  try {
+    const res = await fetch(robotsUrl, { cache: 'no-store' });
+
+    if (!res.ok) {
+      log('system', `⚠️ robots.txt not found (HTTP ${res.status}) — Google may crawl freely or your server is blocking access`);
+      return;
+    }
+
+    const text = await res.text();
+    const lines = text.split('\n').map(l => l.trim().toLowerCase());
+
+    // Simple rule parser — detect if Googlebot (or *) is disallowed from /
+    let currentAgent = null;
+    let googlebotBlocked = false;
+    let wildcardBlocked = false;
+
+    for (const line of lines) {
+      if (line.startsWith('user-agent:')) {
+        currentAgent = line.replace('user-agent:', '').trim();
+      } else if (line.startsWith('disallow:') && currentAgent !== null) {
+        const path = line.replace('disallow:', '').trim();
+        if (path === '/' || path === '') {
+          if (currentAgent === 'googlebot') googlebotBlocked = true;
+          if (currentAgent === '*') wildcardBlocked = true;
+        }
+      }
+    }
+
+    if (googlebotBlocked) {
+      log('error', '🚨 CRITICAL: robots.txt has "Disallow: /" for Googlebot — indexing is BLOCKED. Fix your robots.txt immediately or all ping blasting is wasted.');
+    } else if (wildcardBlocked) {
+      log('error', '🚨 WARNING: robots.txt has "Disallow: /" for all agents (*) — Googlebot is likely blocked. Add an explicit "User-agent: Googlebot / Allow: /" rule or change Disallow to "Disallow:"');
+    } else {
+      log('system', '✅ robots.txt OK — Googlebot not blocked. You\'re clear to index.');
+    }
+  } catch (err) {
+    // CORS will block cross-origin fetch — that's expected from a local file / different domain
+    if (err.name === 'TypeError' || err.message.includes('Failed to fetch')) {
+      log('system', `⚠️ robots.txt fetch blocked by CORS (expected when running locally or cross-origin). Check ${robotsUrl} manually in your browser.`);
+    } else {
+      log('system', `⚠️ robots.txt check error: ${err.message}`);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
 window.addEventListener('load', () => {
   updateTime();
   setInterval(updateTime, 1000);
+
+  // Restore saved settings
+  const savedUrls = localStorage.getItem('indexblast_urls');
+  if(savedUrls){ document.getElementById('url-input').value = savedUrls; updateURLCount(); }
+  const savedKey = localStorage.getItem('indexblast_key');
+  if(savedKey) document.getElementById('indexnow-key').value = savedKey;
+  const savedDomain = localStorage.getItem('indexblast_domain');
+  if(savedDomain) document.getElementById('site-domain').value = savedDomain;
+  const gscToken = localStorage.getItem('indexblast_gsc');
+  if(gscToken) document.getElementById('gsc-token').value = gscToken;
+
+  // ── ROBOTS.TXT DIAGNOSTIC ──
+  checkRobotsTxt();
   loadSaved();
   log('system','IndexBlast Pro v4.0 loaded — 11 ping engines armed and ready');
   log('system','Paste your backlink URLs and click LAUNCH INDEXER');
@@ -1670,6 +1814,14 @@ async function pingIndexNow(){
   log('index',`⚡ IndexNow: ${urls.length} URLs blasted to ${INDEXNOW_ENDPOINTS.length} endpoints`);
   setEngineStatus('indexnow','done');
   incrementPings(INDEXNOW_ENDPOINTS.length);
+
+  // Report a row per URL in this batch (IndexNow is fire-and-forget no-cors, so we report as dispatched)
+  const reportCard = document.getElementById('crawl-report-card');
+  if(reportCard) reportCard.style.display = '';
+  getCurrentBatchURLs().slice(0, 20).forEach(url => {
+    addCrawlReportRow(url, 'success', 'IndexNow', `Submitted to ${INDEXNOW_ENDPOINTS.length} endpoints (Bing+Yandex+Naver)`);
+  });
+
   // FIX: Set bing progress per-cycle, capped at 95 to show room
   setProgress('bing', Math.min(95, 40 + cycleCount * 10));
 }
@@ -1680,23 +1832,38 @@ async function pingGSC(){
   const domain = document.getElementById('site-domain').value.trim();
 
   if(!token){
-    log('index','🔍 GSC API: no token — skipping');
+    log('index','🔍 GSC: no token — skipping. Add OAuth token to enable Request Indexing.');
     setEngineStatus('gsc','skip');
     return;
   }
 
   if(!domain){
-    log('index','🔍 GSC API: no domain set — skipping');
+    log('index','🔍 GSC: no domain set — skipping');
     setEngineStatus('gsc','skip');
     return;
   }
 
+  const reportCard = document.getElementById('crawl-report-card');
+  if(reportCard) reportCard.style.display = '';
+
+  // GSC quota: 200 requests/day across all properties.
+  // Request Indexing is the actual "queue for Googlebot crawl" call —
+  // same endpoint as inspect but with requestIndexing:true.
+  // Limit to 10 URLs per cycle to preserve daily quota.
   const batchUrls = getCurrentBatchURLs().slice(0, 10);
+  const siteUrl = domain.startsWith('http') ? domain.replace(/\/$/, '') + '/' : `https://${domain.replace(/\/$/, '')}/`;
   let submitted = 0;
+  let alreadyIndexed = 0;
+  let failed = 0;
+
+  log('index', `🔍 GSC Request Indexing: queuing ${batchUrls.length} URLs for Googlebot crawl...`);
 
   for(const url of batchUrls){
+    const rowId = addCrawlReportRow(url, 'pending', 'GSC Request Indexing', 'Queuing for Googlebot...');
+
     try {
-      const res = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
+      // ── STEP 1: Inspect first to check current status ──
+      const inspectRes = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1704,28 +1871,110 @@ async function pingGSC(){
         },
         body: JSON.stringify({
           inspectionUrl: url,
-          siteUrl: domain.startsWith('http') ? domain : `https://${domain}/`
+          siteUrl: siteUrl
         })
       });
-      if(res.ok){
-        submitted++;
-      } else if(res.status === 401){
-        log('error','🔍 GSC: Token expired — refresh at OAuth Playground');
+
+      // Handle auth errors immediately — no point continuing
+      if(inspectRes.status === 401){
+        updateCrawlReportRow(rowId, 'fail', 'Token expired — refresh at OAuth Playground');
+        log('error','🔍 GSC 401: Token expired. Go to developers.google.com/oauthplayground and refresh your token.');
         setEngineStatus('gsc','error');
         return;
-      } else if(res.status === 429){
-        log('error','🔍 GSC: Rate limited — backing off');
+      }
+      if(inspectRes.status === 403){
+        updateCrawlReportRow(rowId, 'fail', 'Access denied — check GSC property ownership');
+        log('error',`🔍 GSC 403: ${url.slice(0,60)} — URL not in your GSC property or insufficient scope`);
+        failed++;
+        await sleep(400);
+        continue;
+      }
+      if(inspectRes.status === 429){
+        updateCrawlReportRow(rowId, 'fail', 'Rate limited — daily quota hit');
+        log('error','🔍 GSC 429: Daily quota exceeded (200 req/day). Stopping to preserve quota.');
         break;
       }
+
+      let inspectData = null;
+      if(inspectRes.ok){
+        try { inspectData = await inspectRes.json(); } catch(e){}
+      }
+
+      const verdict = inspectData?.inspectionResult?.indexStatusResult?.verdict || '';
+      const coverageState = inspectData?.inspectionResult?.indexStatusResult?.coverageState || '';
+      const robotsBlocked = inspectData?.inspectionResult?.indexStatusResult?.robotsTxtState === 'BLOCKED';
+
+      // If already indexed and robots are clear, skip the request — don't waste quota
+      if(verdict === 'PASS' && !robotsBlocked){
+        updateCrawlReportRow(rowId, 'success', `Already indexed ✓ (${coverageState || 'Submitted and indexed'})`);
+        log('index', `🔍 GSC ✅ Already indexed: ${url.slice(0,60)}`);
+        alreadyIndexed++;
+        await sleep(350);
+        continue;
+      }
+
+      if(robotsBlocked){
+        updateCrawlReportRow(rowId, 'fail', 'BLOCKED by robots.txt — fix robots.txt first');
+        log('error', `🔍 GSC 🚨 ${url.slice(0,60)} — BLOCKED by robots.txt. No indexing possible.`);
+        failed++;
+        await sleep(350);
+        continue;
+      }
+
+      // ── STEP 2: Request Indexing — this is the actual "queue for crawl" call ──
+      const reqRes = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          inspectionUrl: url,
+          siteUrl: siteUrl,
+          requestIndexing: true   // ← This is the "Request Indexing" button equivalent
+        })
+      });
+
+      if(reqRes.ok){
+        let reqData = null;
+        try { reqData = await reqRes.json(); } catch(e){}
+        const reqVerdict = reqData?.inspectionResult?.indexStatusResult?.verdict || '';
+        const reqCoverage = reqData?.inspectionResult?.indexStatusResult?.coverageState || '';
+
+        let reason = '📬 Queued for Googlebot crawl ✓';
+        if(reqVerdict === 'PASS') reason = 'Already indexed — no crawl needed ✓';
+        else if(reqCoverage) reason = `Queued ✓ Coverage: ${reqCoverage}`;
+
+        updateCrawlReportRow(rowId, 'success', reason);
+        submitted++;
+        log('index', `🔍 GSC ✅ Request Indexing sent: ${url.slice(0,60)} — ${reason}`);
+
+      } else if(reqRes.status === 429){
+        updateCrawlReportRow(rowId, 'fail', 'Rate limited — daily quota hit');
+        log('error','🔍 GSC 429: Quota exceeded mid-batch. Stopping.');
+        break;
+      } else {
+        let errBody = '';
+        try { const j = await reqRes.json(); errBody = j?.error?.message || ''; } catch(e){}
+        updateCrawlReportRow(rowId, 'fail', `Request failed: HTTP ${reqRes.status}${errBody ? ' — ' + errBody : ''}`);
+        log('error', `🔍 GSC Request Indexing failed for ${url.slice(0,60)}: HTTP ${reqRes.status} ${errBody}`);
+        failed++;
+      }
+
     } catch(e){
-      log('error',`🔍 GSC error: ${e.message}`);
+      updateCrawlReportRow(rowId, 'fail', `Network error: ${e.message}`);
+      log('error', `🔍 GSC network error for ${url.slice(0,60)}: ${e.message}`);
+      failed++;
     }
-    await sleep(200);
+
+    // Respect GSC rate limits — 350ms between calls
+    await sleep(350);
   }
 
-  log('index',`🔍 GSC URL Inspect: ${submitted}/${batchUrls.length} URLs submitted to Google`);
-  setEngineStatus('gsc', submitted > 0 ? 'done' : 'error');
-  incrementPings(submitted);
+  const summary = `${submitted} queued for crawl | ${alreadyIndexed} already indexed | ${failed} failed`;
+  log('index', `🔍 GSC Request Indexing complete — ${summary}`);
+  setEngineStatus('gsc', submitted > 0 || alreadyIndexed > 0 ? 'done' : 'error');
+  incrementPings(submitted + alreadyIndexed);
   setProgress('google', Math.min(95, 40 + cycleCount * 10));
 }
 
@@ -2218,6 +2467,90 @@ function toast(msg, type='info'){
 
 // Sleep helper
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+// ═══════════════════════════════════════════════════════
+// CRAWL REPORT FUNCTIONS
+// ═══════════════════════════════════════════════════════
+function addCrawlReportRow(url, status, engine, reason){
+  const body = document.getElementById('crawl-report-body');
+  if(!body) return null;
+  const rowId = 'cr-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+  const time = new Date().toLocaleTimeString();
+  const safeUrl = escapeHTML(url);
+  const displayUrl = escapeHTML(url.replace(/^https?:\/\//,'').slice(0,60) + (url.length > 60 ? '…' : ''));
+  const safeReason = escapeHTML(reason || '');
+  const safeEngine = escapeHTML(engine || '');
+  const row = document.createElement('div');
+  row.className = `cr-row ${status}`;
+  row.id = rowId;
+  row.innerHTML = `
+    <span class="cr-time">${time}</span>
+    <span class="cr-badge ${status}">${status.toUpperCase()}</span>
+    <span class="cr-engine">${safeEngine}</span>
+    <a class="cr-url" href="${safeUrl}" target="_blank" rel="noopener" title="${safeUrl}">${displayUrl}</a>
+    <span class="cr-reason${status === 'fail' ? ' error-reason' : ''}">${safeReason}</span>
+  `;
+  body.insertBefore(row, body.firstChild);
+  while(body.children.length > 300) body.removeChild(body.lastChild);
+
+  // Store for export
+  crawlReportEntries.unshift({ time, url, status, engine, reason });
+  if(crawlReportEntries.length > 500) crawlReportEntries.pop();
+
+  if(status === 'success'){ reportSuccessCount++; }
+  else if(status === 'fail'){ reportFailCount++; }
+  updateReportCounts();
+  return rowId;
+}
+
+function updateCrawlReportRow(rowId, newStatus, newReason){
+  if(!rowId) return;
+  const row = document.getElementById(rowId);
+  if(!row) return;
+  row.className = `cr-row ${newStatus}`;
+  const badge = row.querySelector('.cr-badge');
+  if(badge){
+    badge.className = `cr-badge ${newStatus}`;
+    badge.textContent = newStatus.toUpperCase();
+  }
+  const reasonEl = row.querySelector('.cr-reason');
+  if(reasonEl){
+    reasonEl.textContent = newReason || '';
+    reasonEl.className = `cr-reason${newStatus === 'fail' ? ' error-reason' : ''}`;
+  }
+  // Update counts (row was pending before, now success or fail)
+  if(newStatus === 'success'){ reportSuccessCount++; }
+  else if(newStatus === 'fail'){ reportFailCount++; }
+  // Update stored entry
+  const entry = crawlReportEntries.find(e => e.status === 'pending' && row.querySelector('.cr-url')?.title === e.url);
+  if(entry){ entry.status = newStatus; entry.reason = newReason; }
+  updateReportCounts();
+}
+
+function updateReportCounts(){
+  const s = document.getElementById('report-success-count');
+  const f = document.getElementById('report-fail-count');
+  if(s) s.textContent = reportSuccessCount;
+  if(f) f.textContent = reportFailCount;
+}
+
+function clearCrawlReport(){
+  const body = document.getElementById('crawl-report-body');
+  if(body) body.innerHTML = '';
+  crawlReportEntries = [];
+  reportSuccessCount = 0;
+  reportFailCount = 0;
+  updateReportCounts();
+}
+
+function exportCrawlReport(){
+  const lines = ['TIME\t\tSTATUS\t\tENGINE\t\tURL\t\t\t\t\tREASON'];
+  crawlReportEntries.forEach(e => {
+    lines.push(`${e.time}\t${e.status.toUpperCase()}\t${e.engine}\t${e.url}\t${e.reason}`);
+  });
+  downloadFile('crawl-report.tsv', lines.join('\n'), 'text/tab-separated-values');
+  toast('📥 Crawl report exported!','success');
+}
 
 // ═══════════════════════════════════════════════════════
 // EXPORT FUNCTIONS
