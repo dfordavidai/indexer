@@ -1110,25 +1110,6 @@ https://site3.com/" style="min-height:72px;font-size:0.65rem;" oninput="saveSett
         </div>
       </div>
 
-      <!-- IndexNow -->
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">⚡ IndexNow (Bing + Yandex)</div>
-          <div class="badge badge-green">REAL API</div>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label>IndexNow API Key <a href="https://www.indexnow.org/documentation" target="_blank" style="color:var(--blue);font-size:0.6rem;">Get free key ↗</a></label>
-            <input type="text" id="indexnow-key" placeholder="your-api-key (32+ chars)" value="">
-            <div class="hint">Deploy <code>your-key.txt</code> to your domain root containing just the key. Bing + Yandex index within 2–5 min.</div>
-          </div>
-          <div class="form-group">
-            <label>Your Domain (host for IndexNow)</label>
-            <input type="text" id="site-domain" placeholder="yourdomain.com" value="" oninput="saveSetting('ib_domain',this.value)" onblur="checkRobots()">
-          </div>
-        </div>
-      </div>
-
       <!-- Settings -->
       <div class="card">
         <div class="card-head"><div class="card-title">⚙️ Engine Settings</div></div>
@@ -1204,12 +1185,12 @@ https://site3.com/" style="min-height:72px;font-size:0.65rem;" oninput="saveSett
       <div class="card">
         <div class="card-head">
           <div class="card-title">🛰️ Ping Engines</div>
-          <div class="badge badge-green" id="engine-count-badge">11 Armed</div>
+          <div class="badge badge-green" id="engine-count-badge">10 Armed</div>
         </div>
         <div class="card-body" style="padding:10px;">
           <div class="engine-list" id="engine-list">
             <div class="engine-row" id="eng-gsc"><span class="eng-icon">🔍</span><span class="eng-name">GSC URL Inspect + Request Indexing</span><span class="eng-badge idle" id="eng-gsc-s">IDLE</span></div>
-            <div class="engine-row" id="eng-indexnow"><span class="eng-icon">⚡</span><span class="eng-name">IndexNow (5 endpoints)</span><span class="eng-badge idle" id="eng-indexnow-s">IDLE</span></div>
+
             <div class="engine-row" id="eng-google"><span class="eng-icon">🌐</span><span class="eng-name">Google Sitemap Ping</span><span class="eng-badge idle" id="eng-google-s">IDLE</span></div>
             <div class="engine-row" id="eng-bing"><span class="eng-icon">🔷</span><span class="eng-name">Bing Sitemap Ping</span><span class="eng-badge idle" id="eng-bing-s">IDLE</span></div>
             <div class="engine-row" id="eng-websub"><span class="eng-icon">📡</span><span class="eng-name">WebSub / PubSubHubbub</span><span class="eng-badge idle" id="eng-websub-s">IDLE</span></div>
@@ -1252,7 +1233,7 @@ https://site3.com/" style="min-height:72px;font-size:0.65rem;" oninput="saveSett
           <div class="stat-lbl">Cycles Run</div>
         </div>
         <div class="stat-card yellow" id="sc-engines">
-          <div class="stat-val" id="stat-engines">0/11</div>
+          <div class="stat-val" id="stat-engines">0/10</div>
           <div class="stat-lbl">Engines Done</div>
         </div>
       </div>
@@ -1271,7 +1252,7 @@ https://site3.com/" style="min-height:72px;font-size:0.65rem;" oninput="saveSett
           <div class="prog-track"><div class="prog-fill green" id="p-google"></div></div>
         </div>
         <div class="prog-item">
-          <div class="prog-meta"><span>Bing + Yandex (IndexNow)</span><strong id="p-bing-v">0%</strong></div>
+          <div class="prog-meta"><span>Google Sitemap Coverage</span><strong id="p-bing-v">0%</strong></div>
           <div class="prog-track"><div class="prog-fill blue" id="p-bing"></div></div>
         </div>
         <div class="prog-item">
@@ -1388,10 +1369,7 @@ https://medium.com/@you/article"></textarea>
             <div style="margin-bottom:8px;"><span style="color:var(--blue);font-weight:700;">3. GSC Indexing API (OAuth 2.0 Service Account)</span><br>
             They use a Google Service Account (JSON key file) to call <code>searchconsole.googleapis.com/v1/urlInspection/index:inspect</code> with <code>requestIndexing: true</code>. This is automated "Request Indexing" at scale. They likely rotate multiple GSC properties to stay under the 200 URLs/day quota.</div>
 
-            <div style="margin-bottom:8px;"><span style="color:var(--blue);font-weight:700;">4. IndexNow + Pinging Layer</span><br>
-            In parallel they fire IndexNow to Bing/Yandex, ping pubsubhubbub hubs, submit XML sitemaps, and hit XML-RPC ping endpoints — same as what this tool does in engines 2–11.</div>
-
-            <div style="margin-bottom:8px;"><span style="color:var(--blue);font-weight:700;">5. Crawl Page (Public HTML with Dofollow Links)</span><br>
+            <div style="margin-bottom:8px;"><span style="color:var(--blue);font-weight:700;">4. Crawl Page (Public HTML with Dofollow Links)</span><br>
             The secret sauce: they host a public HTML page that lists all submitted URLs as dofollow links. This page itself gets crawled by Googlebot. Any URL linked from a crawled page gets discovered — this is the core mechanism that makes "link indexers" actually work.</div>
 
             <div style="color:var(--orange);margin-top:10px;padding:8px 12px;background:rgba(255,124,30,0.06);border-radius:6px;border:1px solid rgba(255,124,30,0.2);">
@@ -1434,8 +1412,8 @@ let repOk = 0, repFail = 0, repAlready = 0;
 let failedUrls = new Set(); // for auto-retry
 let queuedForIndexing = new Set(); // track what's been sent to GSC
 
-const ENGINES = ['gsc','indexnow','google','bing','websub','ping','rss','beacon','sitemap','schema','prerender'];
-const TOTAL_ENG = 11;
+const ENGINES = ['gsc','google','bing','websub','ping','rss','beacon','sitemap','schema','prerender'];
+const TOTAL_ENG = 10;
 
 // ════════════════════════════════════════════════════
 // SPECIAL URL MODES (sitemap/feed)
@@ -1482,9 +1460,9 @@ function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 // ════════════════════════════════════════════════════
 window.addEventListener('load', () => {
   // Restore saved text fields
-  const sv = { urls:'ib_urls', key:'ib_key', domain:'ib_domain', gscToken:'ib_gsc', gscSite:'ib_site' };
+  const sv = { urls:'ib_urls', gscToken:'ib_gsc', gscSite:'ib_site' };
   for(const [field, key] of Object.entries(sv)){
-    const el = document.getElementById(field === 'urls' ? 'url-input' : field === 'key' ? 'indexnow-key' : field === 'domain' ? 'site-domain' : field === 'gscToken' ? 'gsc-token' : 'gsc-site');
+    const el = document.getElementById(field === 'urls' ? 'url-input' : field === 'gscToken' ? 'gsc-token' : 'gsc-site');
     const val = localStorage.getItem(key);
     if(val && el) el.value = val;
   }
@@ -1539,8 +1517,6 @@ async function startIndexer(){
   if(!urls.length){ toast('⚠️ Paste at least one URL first!','warn'); return; }
 
   // Save settings
-  localStorage.setItem('ib_key', document.getElementById('indexnow-key').value.trim());
-  localStorage.setItem('ib_domain', document.getElementById('site-domain').value.trim());
   localStorage.setItem('ib_gsc', document.getElementById('gsc-token').value.trim());
   localStorage.setItem('ib_site', document.getElementById('gsc-site').value.trim());
 
@@ -1558,7 +1534,7 @@ async function startIndexer(){
   document.getElementById('start-btn-txt').textContent = 'RUNNING...';
   document.getElementById('hdr-status').textContent = 'ACTIVE';
 
-  log('system',`🚀 Indexer launched — ${urls.length} URLs | GSC=${!!(document.getElementById('gsc-token').value.trim())?'✅':'❌'} | IndexNow=${!!(document.getElementById('indexnow-key').value.trim())?'✅':'❌'}`);
+  log('system',`🚀 Indexer launched — ${urls.length} URLs | GSC=${!!(document.getElementById('gsc-token').value.trim())?'✅':'❌'} | Mode: Google-Only`);
 
   buildFullIndex();
   await runCycle();
@@ -1627,7 +1603,6 @@ async function runCycle(){
 
   const engines = [
     { fn: engGSC,       delay: rapid ? 0 : 0    },
-    { fn: engIndexNow,  delay: rapid ? 0 : 200  },
     { fn: engGoogle,    delay: rapid ? 0 : 400  },
     { fn: engBing,      delay: rapid ? 0 : 600  },
     { fn: engWebSub,    delay: rapid ? 0 : 900  },
@@ -1661,7 +1636,6 @@ async function firePingNow(){
   log('ping','🔥 Manual ping cascade triggered');
   try {
     await engGSC();
-    await engIndexNow();
     await engGoogle();
     await engBing();
   } catch(e){ log('error', `Manual ping error: ${e.message}`); }
@@ -1893,65 +1867,6 @@ async function engGSC(){
 }
 
 // ════════════════════════════════════════════════════
-// ENGINE 2: INDEXNOW (Bing + Yandex + Naver)
-// ════════════════════════════════════════════════════
-async function engIndexNow(){
-  setEng('indexnow','firing');
-  const key = document.getElementById('indexnow-key').value.trim();
-  const domain = (document.getElementById('site-domain').value.trim() || location.hostname).replace(/^https?:\/\//, '').replace(/\/$/, '');
-
-  const ENDPOINTS = [
-    'https://api.indexnow.org/indexnow',
-    'https://www.bing.com/indexnow',
-    'https://yandex.com/indexnow',
-    'https://search.naver.com/indexnow',
-    'https://searchadvisor.naver.com/indexnow',
-  ];
-
-  if(!key){
-    // Fallback: sitemap ping
-    const sm = encodeURIComponent(`${location.href.split('?')[0]}?sitemap=xml`);
-    await fetch(`https://www.bing.com/ping?sitemap=${sm}`, {mode:'no-cors'}).catch(()=>{});
-    await fetch(`https://www.google.com/ping?sitemap=${sm}`, {mode:'no-cors'}).catch(()=>{});
-    log('index','⚡ IndexNow: no key — fired Bing+Google sitemap pings as fallback');
-    setEng('indexnow','done');
-    addPings(2);
-    return;
-  }
-
-  const payload = {
-    host: domain,
-    key: key,
-    keyLocation: `https://${domain}/${key}.txt`,
-    urlList: urls.slice(0, 10000)
-  };
-
-  let hits = 0;
-  for(const ep of ENDPOINTS){
-    try {
-      await fetch(ep, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify(payload),
-        mode: 'no-cors'
-      }).catch(()=>{});
-      hits++;
-    } catch(e){}
-  }
-
-  log('index', `⚡ IndexNow: ${urls.length} URLs → ${ENDPOINTS.length} endpoints (Bing/Yandex/Naver)`);
-  setEng('indexnow','done');
-  addPings(ENDPOINTS.length);
-  setProgress('bing', Math.min(95, 50 + cycleCount * 8));
-
-  // Add to crawl report
-  document.getElementById('report-card').style.display = '';
-  getBatch().slice(0,8).forEach(u => {
-    addReportRow(u, 'success', 'IndexNow', `Submitted to ${ENDPOINTS.length} endpoints (Bing+Yandex+Naver)`);
-  });
-}
-
-// ════════════════════════════════════════════════════
 // ENGINE 3: GOOGLE SITEMAP PING
 // ════════════════════════════════════════════════════
 async function engGoogle(){
@@ -2109,7 +2024,7 @@ async function engPrerender(){
 // ROBOTS.TXT CHECK
 // ════════════════════════════════════════════════════
 async function checkRobots(){
-  const domain = document.getElementById('site-domain')?.value?.trim() || '';
+  const domain = (document.getElementById('gsc-site')?.value?.trim() || document.getElementById('sa-site')?.value?.trim()) || '';
   if(!domain) return;
   const base = domain.startsWith('http') ? domain.replace(/\/$/, '') : `https://${domain}`;
   try {
