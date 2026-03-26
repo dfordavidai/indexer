@@ -1374,31 +1374,34 @@ function he(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 // ── Short code generator ──────────────────────────────
-// Generates a 6-char alphanumeric code. Collision-safe via
-// the shortMapRev reverse lookup.
+// Generates a 5-char lowercase code e.g. "sugus". Collision-safe.
 function genShortCode(){
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const chars = 'abcdefghijklmnopqrstuvwxyz';
   let code, attempts = 0;
   do {
-    code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+    code = Array.from({length:5}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
     attempts++;
   } while(shortMapRev[code] && attempts < 100);
   return code;
 }
 
-// Ensure every URL in the list has a short code assigned.
-// New URLs get a fresh code; existing ones keep theirs.
+// Ensure every URL has a short code. Synchronous assignment so
+// the grid renders with codes immediately — no async race.
 function ensureShortCodes(urlList){
   let newCodes = false;
   for(const url of urlList){
     if(!shortMap[url]){
       const code = genShortCode();
-      shortMap[url]   = code;
+      shortMap[url]    = code;
       shortMapRev[code] = url;
       newCodes = true;
     }
   }
-  if(newCodes) sbSaveShortLinks();
+  if(newCodes){
+    // Write to localStorage instantly so grid renders with codes right away
+    try { localStorage.setItem('ic_shortmap', JSON.stringify(shortMap)); } catch(e){}
+    sbSaveShortLinks(); // persist to Supabase in background
+  }
 }
 
 function shortUrlFor(url){ return SHORT_BASE + (shortMap[url] || genShortCode()); }
