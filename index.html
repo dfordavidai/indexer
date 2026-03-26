@@ -1429,7 +1429,7 @@ window.addEventListener('load', () => {
   const savedGscPer = localStorage.getItem('ic_gscper');
   if(savedGscPer) document.getElementById('gsc-per-cycle').value = savedGscPer;
 
-  // Load short link map FIRST — must exist before buildCrawlSurface renders the grid
+  // Load shortmap FIRST so codes exist when grid renders
   try {
     const saved = JSON.parse(localStorage.getItem('ic_shortmap') || '{}');
     Object.assign(shortMap, saved);
@@ -1594,24 +1594,25 @@ function buildCrawlSurface(){
     const statusBadge = s
       ? `<span class="url-status ${s.verdict}">${statusLabel(s.verdict)}</span>`
       : `<span class="url-status unknown">NEW</span>`;
-    const short = he(url.replace(/^https?:\/\//, '').slice(0, 50)) + (url.length > 50 ? '…' : '');
     const code = shortMap[url];
     const shortUrl = code ? SHORT_BASE + code : '';
-    const shortDisplay = code ? `link/${code}` : '…';
-    return `<div class="url-cell" style="flex-direction:column;align-items:flex-start;gap:3px;padding:8px 12px;">
+    const displayUrl  = shortUrl || url;
+    const displayText = displayUrl.replace(/^https?:\/\//, '').slice(0, 52);
+    const origText    = url.replace(/^https?:\/\//, '').slice(0, 58) + (url.length > 58 ? '…' : '');
+    return `<div class="url-cell" style="flex-direction:column;align-items:flex-start;gap:4px;padding:8px 12px;">
       <div style="display:flex;align-items:center;gap:6px;width:100%;">
         <span style="font-size:0.65rem;opacity:0.4;">🔗</span>
-        <a href="${he(url)}" target="_blank" rel="dofollow noopener" title="${he(url)}" style="flex:1;">${short}</a>
+        <a href="${he(displayUrl)}" target="_blank" rel="dofollow noopener"
+           title="301 → ${he(url)}" style="flex:1;color:var(--accent);font-weight:600;">${he(displayText)}</a>
         ${statusBadge}
       </div>
-      ${shortUrl ? `<div style="display:flex;align-items:center;gap:5px;width:100%;padding-left:18px;">
-        <span style="font-size:0.5rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;">301→</span>
-        <a href="${he(shortUrl)}" target="_blank" rel="dofollow noopener"
-           style="font-size:0.6rem;color:var(--accent);text-decoration:none;font-weight:600;">${he(shortDisplay)}</a>
-        <button onclick="navigator.clipboard?.writeText('${he(shortUrl)}').then(()=>toast('📋 Copied!','success'))"
-          style="font-size:0.5rem;padding:1px 6px;border-radius:3px;border:1px solid rgba(22,163,74,0.3);
-                 background:var(--accent-dim);color:var(--accent);cursor:pointer;margin-left:auto;">COPY</button>
-      </div>` : ''}
+      <div style="display:flex;align-items:center;gap:6px;width:100%;padding-left:18px;">
+        <span style="font-size:0.5rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;">301 ↗</span>
+        <span style="font-size:0.58rem;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;" title="${he(url)}">${he(origText)}</span>
+        ${shortUrl ? `<button onclick="navigator.clipboard?.writeText('${he(shortUrl)}').then(()=>toast('📋 Copied!','success'))"
+          style="font-size:0.5rem;padding:2px 7px;border-radius:3px;border:1px solid rgba(22,163,74,0.3);
+                 background:var(--accent-dim);color:var(--accent);cursor:pointer;white-space:nowrap;flex-shrink:0;">COPY</button>` : ''}
+      </div>
     </div>`;
   }).join('');
 
@@ -2938,7 +2939,7 @@ async function sbConnectSilent(){
       const dot = document.getElementById('sb-dot');
       if(dot) dot.className = 'sb-status-dot connected';
       await sbLoadAll();
-      buildCrawlSurface(); // re-render grid now that short codes are loaded from Supabase
+      buildCrawlSurface(); // re-render now short codes are loaded from Supabase
       log('system', '⚡ Supabase auto-connected — data synced');
     }
   } catch(e){
@@ -2971,21 +2972,25 @@ function rebuildSeoIndex(){
     (buckets[v] || buckets.unknown).push(u);
   });
 
-  allList.innerHTML = urls.map(u =>
-    `<li><a href="${he(u)}" rel="dofollow" target="_blank">${he(u)}</a></li>`
-  ).join('');
+  allList.innerHTML = urls.map(u => {
+    const su = shortMap[u] ? SHORT_BASE + shortMap[u] : u;
+    return `<li><a href="${he(su)}" rel="dofollow" target="_blank" title="${he(u)}">${he(su)}</a></li>`;
+  }).join('');
 
-  indexedList.innerHTML = buckets.indexed.map(u =>
-    `<li><a href="${he(u)}" rel="dofollow" target="_blank">${he(u)}</a></li>`
-  ).join('') || '<li>No confirmed indexed URLs yet.</li>';
+  indexedList.innerHTML = buckets.indexed.map(u => {
+    const su = shortMap[u] ? SHORT_BASE + shortMap[u] : u;
+    return `<li><a href="${he(su)}" rel="dofollow" target="_blank" title="${he(u)}">${he(su)}</a></li>`;
+  }).join('') || '<li>No confirmed indexed URLs yet.</li>';
 
-  pendingList.innerHTML = [...buckets.pending, ...buckets.unknown].map(u =>
-    `<li><a href="${he(u)}" rel="dofollow" target="_blank">${he(u)}</a></li>`
-  ).join('') || '<li>Queue is empty.</li>';
+  pendingList.innerHTML = [...buckets.pending, ...buckets.unknown].map(u => {
+    const su = shortMap[u] ? SHORT_BASE + shortMap[u] : u;
+    return `<li><a href="${he(su)}" rel="dofollow" target="_blank" title="${he(u)}">${he(su)}</a></li>`;
+  }).join('') || '<li>Queue is empty.</li>';
 
-  crawledList.innerHTML = buckets.crawled.map(u =>
-    `<li><a href="${he(u)}" rel="dofollow" target="_blank">${he(u)}</a></li>`
-  ).join('') || '<li>No crawled-not-indexed URLs yet.</li>';
+  crawledList.innerHTML = buckets.crawled.map(u => {
+    const su = shortMap[u] ? SHORT_BASE + shortMap[u] : u;
+    return `<li><a href="${he(su)}" rel="dofollow" target="_blank" title="${he(u)}">${he(su)}</a></li>`;
+  }).join('') || '<li>No crawled-not-indexed URLs yet.</li>';
 
   const h1 = document.getElementById('seo-h1');
   if(h1) h1.textContent = `Backlink Campaign Index — ${urls.length} Active URLs`;
