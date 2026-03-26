@@ -1318,6 +1318,12 @@ let saTokenCache = {};
 // URL status tracking: url → { verdict, coverage, lastCheck }
 let urlStatus = {};
 
+// Short URL map: originalUrl → shortCode  (e.g. "https://example.com/page" → "gsduh")
+// Reverse map:  shortCode → originalUrl
+let shortMap = {};     // original → code
+let shortMapRev = {};  // code    → original
+const SHORT_BASE = 'https://indexernow.vercel.app/link/';
+
 // Report entries for export
 let reportEntries = [];
 let logEntries = [];
@@ -1336,9 +1342,12 @@ let cntIndexed = 0, cntCrawled = 0, cntPending = 0, cntError = 0;
 
   if(p.get('sitemap') === 'xml'){
     const now = new Date().toISOString();
-    const items = urlList.map(u =>
-      `  <url>\n    <loc>${xe(u)}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>always</changefreq>\n    <priority>1.0</priority>\n  </url>`
-    ).join('\n');
+    // Use short URLs in sitemap — Google fetches them, gets 301, follows to target
+    const items = urlList.map(u => {
+      const code = (() => { try { const m = JSON.parse(localStorage.getItem('ic_shortmap')||'{}'); return m[u]; } catch(e){ return null; } })();
+      const loc = code ? `https://indexernow.vercel.app/link/${code}` : u;
+      return `  <url>\n    <loc>${xe(loc)}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>always</changefreq>\n    <priority>1.0</priority>\n  </url>`;
+    }).join('\n');
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items}\n</urlset>`;
     document.open();
     document.write(`<pre style="font:12px monospace;color:#0f0;background:#000;padding:20px;">${xml.replace(/</g,'&lt;')}</pre>`);
@@ -1363,6 +1372,36 @@ let cntIndexed = 0, cntCrawled = 0, cntPending = 0, cntError = 0;
 function xe(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function he(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+// ── Short code generator ──────────────────────────────
+// Generates a 6-char alphanumeric code. Collision-safe via
+// the shortMapRev reverse lookup.
+function genShortCode(){
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let code, attempts = 0;
+  do {
+    code = Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+    attempts++;
+  } while(shortMapRev[code] && attempts < 100);
+  return code;
+}
+
+// Ensure every URL in the list has a short code assigned.
+// New URLs get a fresh code; existing ones keep theirs.
+function ensureShortCodes(urlList){
+  let newCodes = false;
+  for(const url of urlList){
+    if(!shortMap[url]){
+      const code = genShortCode();
+      shortMap[url]   = code;
+      shortMapRev[code] = url;
+      newCodes = true;
+    }
+  }
+  if(newCodes) sbSaveShortLinks();
+}
+
+function shortUrlFor(url){ return SHORT_BASE + (shortMap[url] || genShortCode()); }
 
 // ═══════════════════════════════════
 // INIT
@@ -1394,6 +1433,13 @@ window.addEventListener('load', () => {
   onGscChange();
   buildCrawlSurface();
 
+  // Load short link map from localStorage (Supabase sync happens after connect)
+  try {
+    const saved = JSON.parse(localStorage.getItem('ic_shortmap') || '{}');
+    Object.assign(shortMap, saved);
+    Object.entries(saved).forEach(([orig, code]) => { shortMapRev[code] = orig; });
+  } catch(e){}
+
   log('system', 'IndexCore loaded — 5-step real indexing engine ready');
   log('system', 'Step ①: Add URLs  →  ②③: Pings fire  →  ④⑤: GSC tracks indexing status');
 });
@@ -1410,6 +1456,7 @@ function parseURLs(){
 
 function onUrlChange(){
   urls = parseURLs();
+  ensureShortCodes(urls);
   localStorage.setItem('ic_urls', document.getElementById('url-input').value);
   sbSaveSetting('ic_urls', document.getElementById('url-input').value);
   const n = urls.length;
@@ -1547,11 +1594,24 @@ function buildCrawlSurface(){
     const statusBadge = s
       ? `<span class="url-status ${s.verdict}">${statusLabel(s.verdict)}</span>`
       : `<span class="url-status unknown">NEW</span>`;
-    const short = he(url.replace(/^https?:\/\//, '').slice(0, 60)) + (url.length > 60 ? '…' : '');
-    return `<div class="url-cell">
-      <span style="font-size:0.65rem;opacity:0.4;">🔗</span>
-      <a href="${he(url)}" target="_blank" rel="dofollow noopener" title="${he(url)}">${short}</a>
-      ${statusBadge}
+    const short = he(url.replace(/^https?:\/\//, '').slice(0, 50)) + (url.length > 50 ? '…' : '');
+    const code = shortMap[url];
+    const shortUrl = code ? SHORT_BASE + code : '';
+    const shortDisplay = code ? `link/${code}` : '…';
+    return `<div class="url-cell" style="flex-direction:column;align-items:flex-start;gap:3px;padding:8px 12px;">
+      <div style="display:flex;align-items:center;gap:6px;width:100%;">
+        <span style="font-size:0.65rem;opacity:0.4;">🔗</span>
+        <a href="${he(url)}" target="_blank" rel="dofollow noopener" title="${he(url)}" style="flex:1;">${short}</a>
+        ${statusBadge}
+      </div>
+      ${shortUrl ? `<div style="display:flex;align-items:center;gap:5px;width:100%;padding-left:18px;">
+        <span style="font-size:0.5rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;">301→</span>
+        <a href="${he(shortUrl)}" target="_blank" rel="dofollow noopener"
+           style="font-size:0.6rem;color:var(--accent);text-decoration:none;font-weight:600;">${he(shortDisplay)}</a>
+        <button onclick="navigator.clipboard?.writeText('${he(shortUrl)}').then(()=>toast('📋 Copied!','success'))"
+          style="font-size:0.5rem;padding:1px 6px;border-radius:3px;border:1px solid rgba(22,163,74,0.3);
+                 background:var(--accent-dim);color:var(--accent);cursor:pointer;margin-left:auto;">COPY</button>
+      </div>` : ''}
     </div>`;
   }).join('');
 
@@ -1571,13 +1631,15 @@ function buildCrawlSurface(){
     <span style="margin-left:auto;font-size:0.58rem;color:var(--muted2);">${urls.length} total URLs</span>
   `;
 
-  // Full hidden index (for crawlers)
+  // Full hidden index (for crawlers) — short URLs are the primary crawl targets
   const allLinks = document.getElementById('all-links');
   const fullIdx = document.getElementById('full-index');
   fullIdx.style.display = 'block';
-  allLinks.innerHTML = urls.map(u =>
-    `<a href="${he(u)}" rel="dofollow" title="${he(u)}" style="display:block;color:rgba(0,170,255,0.35);font-family:var(--font-mono);font-size:0.58rem;padding:1px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;break-inside:avoid;">${he(u.replace(/^https?:\/\//, ''))}</a>`
-  ).join('');
+  allLinks.innerHTML = urls.map(u => {
+    const code = shortMap[u];
+    const shortUrl = code ? SHORT_BASE + code : u;
+    return `<a href="${he(shortUrl)}" rel="dofollow" title="${he(u)}" style="display:block;color:rgba(22,163,74,0.5);font-family:var(--font-mono);font-size:0.58rem;padding:1px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;break-inside:avoid;">${he(shortUrl.replace(/^https?:\/\//,''))}</a>`;
+  }).join('');
 }
 
 function statusLabel(v){
@@ -1738,18 +1800,22 @@ async function runGscCheck(){
   log('gsc', `🔍 GSC Inspect + Request Indexing: ${toCheck.length} URLs via ${gscMode.toUpperCase()} (permanent token)`);
 
   const { token, siteUrl } = cfg;
-  const normSite = siteUrl.endsWith('/') ? siteUrl : siteUrl + '/';
+  // Use indexernow.vercel.app as the GSC property since short URLs live there
+  const normSite = 'https://indexernow.vercel.app/';
 
   let cntSubmitted = 0, cntAlready = 0, cntFailed = 0;
 
   for(const url of toCheck){
+    // Use the short URL for GSC — Google fetches it, sees 301, indexes the chain
+    const code = shortMap[url];
+    const inspectUrl = code ? SHORT_BASE + code : url;
     try {
 
       // ══ STEP 1: Inspect current index status ══════════════
       const inspResp = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inspectionUrl: url, siteUrl: normSite })
+        body: JSON.stringify({ inspectionUrl: inspectUrl, siteUrl: normSite })
       });
 
       if(inspResp.status === 401){
@@ -1833,7 +1899,7 @@ async function runGscCheck(){
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          inspectionUrl:   url,
+          inspectionUrl:   inspectUrl,
           siteUrl:         normSite,
           requestIndexing: true        // ← THE "Request Indexing" button call
         })
@@ -2425,12 +2491,18 @@ create table if not exists ic_settings (
 
 create table if not exists ic_urls (
   url        text primary key,
+  short_code text unique,
+  target_url text default '',
   verdict    text default 'pending',
   coverage   text default '',
   last_crawl text default '',
   last_check text default '',
   added_at   timestamptz default now()
 );
+
+-- Migration: add columns if upgrading from older schema
+alter table ic_urls add column if not exists short_code text unique;
+alter table ic_urls add column if not exists target_url text default '';
 
 create table if not exists ic_report (
   id         bigint generated always as identity primary key,
@@ -2458,6 +2530,14 @@ create table if not exists ic_bot_visits (
   is_bot     boolean,
   is_google  boolean,
   visited_at timestamptz default now()
+);
+
+-- Short link redirect table (used by Vercel Edge Function)
+create table if not exists ic_short_links (
+  code       text primary key,
+  target     text not null,
+  created_at timestamptz default now(),
+  hits       bigint default 0
 );
 
 -- Optional: keep tables lean (auto-delete old rows)
@@ -2685,7 +2765,10 @@ async function sbLoadAll(){
       try { localStorage.setItem('ic_botvisits', JSON.stringify(visits)); } catch(e){}
     }
 
-    // 4. Re-init
+    // 4. Short link map
+    await sbLoadShortLinks();
+
+    // 5. Re-init
     onUrlChange();
     onGscChange();
     buildCrawlSurface();
@@ -2789,6 +2872,43 @@ async function sbClearLog(){
     method: 'DELETE',
     headers: { 'apikey': SB.key, 'Authorization': `Bearer ${SB.key}` }
   });
+}
+
+// ── Short link persistence ─────────────────────────────
+// Short codes are stored in ic_settings as a single JSON blob (key: ic_shortmap)
+// and also in localStorage for instant sitemap generation on load.
+
+async function sbSaveShortLinks(){
+  // Save to localStorage immediately
+  try { localStorage.setItem('ic_shortmap', JSON.stringify(shortMap)); } catch(e){}
+  // Save to Supabase settings blob
+  if(!SB) return;
+  await sbUpsert('ic_settings', { key: 'ic_shortmap', value: JSON.stringify(shortMap) }, 'key');
+  // Also upsert each code into ic_short_links so the Edge Function can do fast lookups
+  const rows = Object.entries(shortMap).map(([target, code]) => ({ code, target }));
+  if(rows.length) await sbUpsert('ic_short_links', rows, 'code');
+}
+
+async function sbLoadShortLinks(){
+  // Try Supabase first
+  if(SB){
+    const rows = await sbGet('ic_settings', '?key=eq.ic_shortmap');
+    if(rows && rows[0]?.value){
+      try {
+        const map = JSON.parse(rows[0].value);
+        Object.assign(shortMap, map);
+        Object.entries(map).forEach(([orig, code]) => { shortMapRev[code] = orig; });
+        try { localStorage.setItem('ic_shortmap', rows[0].value); } catch(e){}
+        return;
+      } catch(e){}
+    }
+  }
+  // Fallback: localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem('ic_shortmap') || '{}');
+    Object.assign(shortMap, saved);
+    Object.entries(saved).forEach(([orig, code]) => { shortMapRev[code] = orig; });
+  } catch(e){}
 }
 
 // ── HARDCODED SUPABASE CREDENTIALS (auto-connect, no UI shown) ──────────────
