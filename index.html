@@ -168,6 +168,7 @@ body::after {
   grid-template-columns: 380px 1fr;
   gap: 0;
   min-height: calc(100vh - 52px);
+  align-items: start;
 }
 
 @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
@@ -181,9 +182,10 @@ body::after {
   gap: 16px;
   background: rgba(10,13,18,0.6);
   overflow-y: auto;
-  max-height: calc(100vh - 52px);
+  height: calc(100vh - 52px);
   position: sticky;
   top: 52px;
+  align-items: stretch;
 }
 
 /* ── CARDS ── */
@@ -191,7 +193,9 @@ body::after {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .card-head {
@@ -228,7 +232,7 @@ body::after {
 .badge-orange { background: rgba(255,124,30,0.1); color: var(--orange); border: 1px solid rgba(255,124,30,0.25); }
 .badge-red { background: rgba(255,61,90,0.1); color: var(--red); border: 1px solid rgba(255,61,90,0.25); }
 
-.card-body { padding: 16px; }
+.card-body { padding: 16px; display: block !important; overflow: visible; }
 
 /* ── FORM ELEMENTS ── */
 label {
@@ -241,7 +245,7 @@ label {
   margin-bottom: 5px;
 }
 
-textarea, input[type="text"], input[type="number"], select {
+textarea, input[type="text"], input[type="number"] {
   width: 100%;
   background: var(--surface2);
   border: 1px solid var(--border2);
@@ -252,7 +256,27 @@ textarea, input[type="text"], input[type="number"], select {
   padding: 9px 12px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
-  -webkit-appearance: none;
+}
+
+select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+  appearance: auto;
+}
+select option {
+  background: var(--surface2);
+  color: var(--text);
 }
 
 textarea { resize: vertical; min-height: 160px; line-height: 1.8; }
@@ -412,7 +436,7 @@ textarea::placeholder { color: var(--muted2); font-size: 0.65rem; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
 
 /* ── RIGHT MAIN ── */
-.main { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.main { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; height: calc(100vh - 52px); position: sticky; top: 52px; }
 
 /* ── STATS ROW ── */
 .stats-row {
@@ -506,7 +530,7 @@ textarea::placeholder { color: var(--muted2); font-size: 0.65rem; }
   font-family: var(--font-mono);
   font-size: 0.66rem;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: 2px;
 }
 
@@ -801,7 +825,7 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
           </div>
           <div class="form-group">
             <label>OAuth 2.0 Access Token</label>
-            <input type="text" id="gsc-token" placeholder="ya29.your-access-token-here">
+            <input type="text" id="gsc-token" placeholder="ya29.your-access-token-here" oninput="saveSetting('ib_gsc',this.value)">
             <div class="gsc-steps">
               <strong style="color:var(--text);">How to get your token (2 min):</strong>
               <ol class="gsc-steps">
@@ -816,7 +840,7 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
           </div>
           <div class="form-group">
             <label>GSC Property URL (siteUrl)</label>
-            <input type="text" id="gsc-site" placeholder="https://yourdomain.com/" value="">
+            <input type="text" id="gsc-site" placeholder="https://yourdomain.com/" value="" oninput="saveSetting('ib_site',this.value)">
             <div class="hint">Must exactly match your GSC property (including trailing slash). Supports sc-domain: prefixes too.</div>
           </div>
         </div>
@@ -836,7 +860,7 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
           </div>
           <div class="form-group">
             <label>Your Domain (host for IndexNow)</label>
-            <input type="text" id="site-domain" placeholder="yourdomain.com" value="">
+            <input type="text" id="site-domain" placeholder="yourdomain.com" value="" oninput="saveSetting('ib_domain',this.value)" onblur="checkRobots()">
           </div>
         </div>
       </div>
@@ -848,7 +872,7 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
           <div class="form-row">
             <div>
               <label>Cycle Interval</label>
-              <select id="cycle-interval">
+              <select id="cycle-interval" onchange="saveSetting('ib_interval',this.value)">
                 <option value="30">30 sec 🔥</option>
                 <option value="45" selected>45 sec ⚡</option>
                 <option value="60">1 min</option>
@@ -858,7 +882,7 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
             </div>
             <div>
               <label>Batch Size</label>
-              <select id="batch-size">
+              <select id="batch-size" onchange="saveSetting('ib_batchsize',this.value);renderBatch()">
                 <option value="10">10 URLs</option>
                 <option value="25">25 URLs</option>
                 <option value="50" selected>50 URLs</option>
@@ -870,7 +894,7 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
           <div class="form-row">
             <div>
               <label>GSC URLs/Cycle</label>
-              <select id="gsc-per-cycle">
+              <select id="gsc-per-cycle" onchange="saveSetting('ib_gscper',this.value)">
                 <option value="5">5 (safe)</option>
                 <option value="10" selected>10 (recommended)</option>
                 <option value="15">15 (fast)</option>
@@ -879,7 +903,7 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
             </div>
             <div>
               <label>Crawl Priority</label>
-              <select id="crawl-priority">
+              <select id="crawl-priority" onchange="saveSetting('ib_priority',this.value)">
                 <option value="1.0" selected>1.0 Max</option>
                 <option value="0.9">0.9 High</option>
                 <option value="0.8">0.8 Normal</option>
@@ -1020,7 +1044,11 @@ https://linkedin.com/posts/you-12345" oninput="onUrlChange()"></textarea>
       <div class="links-card">
         <div class="card-head">
           <div class="card-title">🕷️ Live Crawl Surface</div>
-          <div class="badge badge-blue">Batch <span id="batch-n">0</span>/<span id="batch-t">0</span> · <span id="batch-size-s">0</span> URLs</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="badge badge-blue">Batch <span id="batch-n">0</span>/<span id="batch-t">0</span> · <span id="batch-size-s">0</span> URLs</div>
+            <button class="btn btn-sm btn-ping" onclick="rotateBatch()" title="Next batch">↻ Next</button>
+            <button class="btn btn-sm btn-export" onclick="buildFullIndex()" title="Build full crawlable index">📚 Full Index</button>
+          </div>
         </div>
         <div class="links-grid" id="links-grid"></div>
         <div id="full-index">
@@ -1108,11 +1136,23 @@ function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 // INIT
 // ════════════════════════════════════════════════════
 window.addEventListener('load', () => {
-  // Restore saved
+  // Restore saved text fields
   const sv = { urls:'ib_urls', key:'ib_key', domain:'ib_domain', gscToken:'ib_gsc', gscSite:'ib_site' };
   for(const [field, key] of Object.entries(sv)){
     const el = document.getElementById(field === 'urls' ? 'url-input' : field === 'key' ? 'indexnow-key' : field === 'domain' ? 'site-domain' : field === 'gscToken' ? 'gsc-token' : 'gsc-site');
     const val = localStorage.getItem(key);
+    if(val && el) el.value = val;
+  }
+  // Restore select settings
+  const selects = {
+    'cycle-interval': 'ib_interval',
+    'batch-size': 'ib_batchsize',
+    'gsc-per-cycle': 'ib_gscper',
+    'crawl-priority': 'ib_priority'
+  };
+  for(const [id, key] of Object.entries(selects)){
+    const val = localStorage.getItem(key);
+    const el = document.getElementById(id);
     if(val && el) el.value = val;
   }
   onUrlChange();
@@ -1120,6 +1160,8 @@ window.addEventListener('load', () => {
   log('system','GSC Request Indexing API connected — same as clicking "Request Indexing" in GSC per URL');
   checkRobots();
 });
+
+function saveSetting(key, val){ try { localStorage.setItem(key, val); } catch(e){} }
 
 // ════════════════════════════════════════════════════
 // URL MANAGEMENT
@@ -1846,7 +1888,7 @@ function log(type, msg){
   const el = document.createElement('div');
   el.className = 'log-entry';
   el.innerHTML = `<span class="log-time">${hesc(time)}</span><span class="log-type ${hesc(type)}">${hesc(type.toUpperCase())}</span><span class="log-msg">${hesc(msg)}</span>`;
-  body.prepend(el);
+  body.insertBefore(el, body.firstChild);
   while(body.children.length > 200) body.removeChild(body.lastChild);
 }
 
@@ -1897,6 +1939,9 @@ function clearReport(){
   if(b) b.innerHTML = '';
   reportEntries = []; repOk = repFail = repAlready = 0;
   updateRepCounts();
+  // Keep report card hidden again after clear if no data
+  const rc = document.getElementById('report-card');
+  if(rc) rc.style.display = 'none';
 }
 
 // Toast
