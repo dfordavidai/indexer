@@ -151,6 +151,47 @@ textarea{resize:vertical;line-height:1.7}
 
 /* ── View toggle ── */
 .view{display:none}.view.active{display:contents}
+
+/* ── Crawl Details Modal ── */
+.crawl-modal{max-width:620px;width:100%}
+.crawl-modal .modal-title{display:flex;align-items:center;gap:10px;margin-bottom:0}
+.crawl-url-bar{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.65rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:12px 0 16px}
+.crawl-url-bar span{color:var(--accent)}
+.crawl-sections{display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto;padding-right:4px}
+.crawl-sections::-webkit-scrollbar{width:3px}
+.crawl-sections::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.crawl-section{background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.crawl-section-hdr{padding:9px 14px;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border)}
+.crawl-section-hdr .cs-icon{font-size:.85rem}
+.crawl-section-body{padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.crawl-section-body.single{grid-template-columns:1fr}
+.crawl-kv{display:flex;flex-direction:column;gap:2px;padding:5px 0}
+.crawl-kv .ck{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
+.crawl-kv .cv{font-size:.68rem;color:var(--text);word-break:break-all}
+.crawl-kv .cv.good{color:var(--accent)}
+.crawl-kv .cv.warn{color:var(--orange)}
+.crawl-kv .cv.bad{color:var(--red)}
+.crawl-kv .cv.blue{color:var(--blue)}
+.crawl-loading{text-align:center;padding:40px 20px;color:var(--muted);font-size:.72rem}
+.crawl-loading .spin{display:inline-block;animation:spin 1s linear infinite;font-size:1.4rem;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.crawl-error{background:var(--red-dim);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:12px 16px;font-size:.68rem;color:var(--red);margin:8px 0}
+.crawl-verdict-banner{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;margin-bottom:4px}
+.crawl-verdict-banner.pass{background:var(--accent-dim);border:1px solid rgba(0,255,136,.2)}
+.crawl-verdict-banner.neutral{background:var(--blue-dim);border:1px solid rgba(59,130,246,.2)}
+.crawl-verdict-banner.fail{background:var(--red-dim);border:1px solid rgba(239,68,68,.2)}
+.crawl-verdict-banner.pending{background:var(--orange-dim);border:1px solid rgba(245,158,11,.2)}
+.cvb-icon{font-size:1.5rem}
+.cvb-label{font-family:var(--display);font-size:.85rem;font-weight:700}
+.cvb-label.pass{color:var(--accent)}
+.cvb-label.neutral{color:var(--blue)}
+.cvb-label.fail{color:var(--red)}
+.cvb-label.pending{color:var(--orange)}
+.cvb-sub{font-size:.58rem;color:var(--muted);margin-top:2px}
+.crawl-no-sa{text-align:center;padding:30px 20px;color:var(--muted2);font-size:.68rem}
+.crawl-no-sa .ns-icon{font-size:2rem;margin-bottom:10px;opacity:.4}
+.crawl-inspect-btn{background:var(--blue-dim);border:1px solid rgba(59,130,246,.25);color:var(--blue);font-family:var(--mono);font-size:.6rem;border-radius:6px;padding:3px 9px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.crawl-inspect-btn:hover{background:rgba(59,130,246,.18)}
 </style>
 </head>
 <body>
@@ -306,6 +347,7 @@ textarea{resize:vertical;line-height:1.7}
                 <th>GSC Status</th>
                 <th>Hits (Googlebot)</th>
                 <th>Submitted</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="report-tbody"></tbody>
@@ -342,6 +384,24 @@ textarea{resize:vertical;line-height:1.7}
     <div class="modal-row">
       <button class="btn btn-outline" style="flex:1" onclick="closeModal('modal-links')">Cancel</button>
       <button class="btn btn-primary" style="flex:2" onclick="addLinks()">⚡ Generate & Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Crawl Details Modal -->
+<div class="modal-bg" id="modal-crawl">
+  <div class="modal crawl-modal">
+    <div class="modal-title">
+      <span style="font-size:1.1rem">🔍</span>
+      <span>Crawl Details</span>
+      <button class="btn btn-outline" style="margin-left:auto;font-size:.55rem;padding:3px 9px" onclick="closeModal('modal-crawl')">✕ Close</button>
+    </div>
+    <div class="crawl-url-bar" id="crawl-url-bar">—</div>
+    <div class="crawl-sections" id="crawl-sections">
+      <div class="crawl-loading">
+        <div class="spin">⟳</div>
+        <div>Loading crawl data…</div>
+      </div>
     </div>
   </div>
 </div>
@@ -508,6 +568,7 @@ function renderProjectView(projId){
       <td style="color:var(--muted);font-size:.62rem">${date}</td>
       <td>
         <div style="display:flex;gap:6px">
+          <button class="crawl-inspect-btn" onclick="openCrawlDetails('${he(shortUrl)}','${he(l.original)}')">🔍 Inspect</button>
           <button class="btn btn-outline" style="font-size:.55rem;padding:3px 8px" onclick="copyShort('${he(shortUrl)}',this)">COPY</button>
           <button class="btn btn-danger" style="font-size:.55rem;padding:3px 8px" onclick="deleteLink('${l.id}','${projId}')">✕</button>
         </div>
@@ -560,6 +621,7 @@ function renderReport(){
       <td>${verdictBadge(l.verdict)}</td>
       <td><span class="${hits>0?'hits-num':'hits-zero'}">${hits}${hits>0?' 🤖':''}</span></td>
       <td style="color:${l.submitted?'var(--accent)':'var(--muted2)'};font-size:.62rem">${l.submitted?'✓ Yes':'—'}</td>
+      <td><button class="crawl-inspect-btn" onclick="openCrawlDetails('${he(shortUrl)}','${he(l.original)}')">🔍 Inspect</button></td>
     </tr>`;
   }).join('');
 }
@@ -806,6 +868,165 @@ function toast(msg,type){
   el.textContent=msg; el.className=`toast show${type?' '+type:''}`;
   clearTimeout(el._t); el._t=setTimeout(()=>{ el.className='toast'; },2500);
 }
+
+// ── Crawl Details ─────────────────────────────────────────
+async function openCrawlDetails(shortUrl, originalUrl){
+  document.getElementById('modal-crawl').classList.add('open');
+  const urlBar = document.getElementById('crawl-url-bar');
+  urlBar.innerHTML = `<span>Short:</span> ${he(shortUrl)} &nbsp;→&nbsp; <span>Original:</span> ${he(originalUrl.slice(0,60))}${originalUrl.length>60?'…':''}`;
+  const sections = document.getElementById('crawl-sections');
+  sections.innerHTML = `<div class="crawl-loading"><div class="spin">⟳</div><div>Querying Google Search Console…</div></div>`;
+
+  const saRaw = document.getElementById('sa-json').value.trim();
+  const site  = document.getElementById('gsc-site').value.trim() || 'https://indexernow.vercel.app/';
+
+  if(!saRaw){
+    sections.innerHTML = `<div class="crawl-no-sa">
+      <div class="ns-icon">🔑</div>
+      <div style="margin-bottom:8px;color:var(--text);font-size:.72rem">Service Account Required</div>
+      <div>Paste your Google Service Account JSON in the <strong style="color:var(--accent)">Submit to Google</strong> tab to enable crawl inspection.</div>
+    </div>`;
+    return;
+  }
+
+  try {
+    const token = await getGscToken(saRaw);
+    const r = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inspectionUrl: shortUrl, siteUrl: site })
+    });
+
+    if(!r.ok){
+      const errText = await r.text();
+      sections.innerHTML = `<div class="crawl-error">❌ GSC API error ${r.status}: ${he(errText.slice(0,200))}</div>`;
+      return;
+    }
+
+    const data = await r.json();
+    const res  = data?.inspectionResult || {};
+    renderCrawlDetails(sections, res, shortUrl);
+
+  } catch(e) {
+    sections.innerHTML = `<div class="crawl-error">❌ ${he(e.message)}</div>`;
+  }
+}
+
+function renderCrawlDetails(container, res, shortUrl){
+  const idx   = res.indexStatusResult || {};
+  const mob   = res.mobileUsabilityResult || {};
+  const rich  = res.richResultsResult || {};
+  const amp   = res.ampResult || {};
+
+  // ── Verdict banner ──
+  const verdict = idx.verdict || 'UNKNOWN';
+  const vClass  = verdict==='PASS'?'pass': verdict==='NEUTRAL'?'neutral': verdict==='FAIL'?'fail':'pending';
+  const vIcon   = verdict==='PASS'?'✅': verdict==='NEUTRAL'?'🔵': verdict==='FAIL'?'❌':'⏳';
+  const vLabel  = verdict==='PASS'?'Indexed': verdict==='NEUTRAL'?'Crawled / Not Indexed': verdict==='FAIL'?'Not Indexed (Error)':'Unknown / Pending';
+  const vSub    = idx.coverageState || '';
+
+  let html = `<div class="crawl-verdict-banner ${vClass}">
+    <span class="cvb-icon">${vIcon}</span>
+    <div>
+      <div class="cvb-label ${vClass}">${vLabel}</div>
+      ${vSub?`<div class="cvb-sub">${he(vSub)}</div>`:''}
+    </div>
+  </div>`;
+
+  // ── Index Status ──
+  html += `<div class="crawl-section">
+    <div class="crawl-section-hdr" style="background:rgba(0,255,136,0.04)">
+      <span class="cs-icon">📄</span>
+      <span style="color:var(--accent)">Index Status</span>
+    </div>
+    <div class="crawl-section-body">
+      ${kv('Verdict', verdict, vClass)}
+      ${kv('Coverage State', idx.coverageState||'—')}
+      ${kv('Robots.txt State', idx.robotsTxtState||'—', robotsColor(idx.robotsTxtState))}
+      ${kv('Indexing State', idx.indexingState||'—', indexingColor(idx.indexingState))}
+      ${kv('Page Fetch State', idx.pageFetchState||'—', fetchColor(idx.pageFetchState))}
+      ${kv('Last Crawl Time', idx.lastCrawlTime ? fmtDate(idx.lastCrawlTime) : '—', idx.lastCrawlTime?'good':'')}
+      ${kv('Crawled As', idx.crawledAs||'—', 'blue')}
+      ${kv('Google Canonical', idx.googleCanonical ? shortUrl===idx.googleCanonical?'✓ Matches Short URL':'⚠ '+idx.googleCanonical.slice(0,50) : '—', idx.googleCanonical&&idx.googleCanonical===shortUrl?'good':'warn')}
+      ${kv('User Canonical', idx.userDeclaredCanonical||'—')}
+      ${kv('Sitemap', (idx.sitemap&&idx.sitemap.length)?idx.sitemap[0].slice(0,50)+'…':'—')}
+      ${kv('Referring URLs', (idx.referringUrls&&idx.referringUrls.length)?idx.referringUrls.length+' found':'None found', idx.referringUrls?.length?'good':'')}
+    </div>
+  </div>`;
+
+  // ── Mobile Usability ──
+  const mobVerdict = mob.verdict || '—';
+  const mobClass = mobVerdict==='PASS'?'good': mobVerdict==='FAIL'?'bad':'';
+  const mobIssues = mob.issues||[];
+  html += `<div class="crawl-section">
+    <div class="crawl-section-hdr" style="background:rgba(59,130,246,0.04)">
+      <span class="cs-icon">📱</span>
+      <span style="color:var(--blue)">Mobile Usability</span>
+    </div>
+    <div class="crawl-section-body ${mobIssues.length?'single':''}">
+      ${mobIssues.length
+        ? mobIssues.map(i=>`<div class="crawl-kv"><div class="ck">Issue</div><div class="cv bad">${he(i.issueType||i)}</div></div>`).join('')
+        : kv('Status', mobVerdict==='PASS'?'✓ Mobile Friendly': mobVerdict==='FAIL'?'✗ Issues Found': mobVerdict==='—'?'No data':'Checking…', mobClass)
+      }
+    </div>
+  </div>`;
+
+  // ── Rich Results ──
+  if(rich.verdict || (rich.detectedItems && rich.detectedItems.length)){
+    const richItems = rich.detectedItems||[];
+    html += `<div class="crawl-section">
+      <div class="crawl-section-hdr" style="background:rgba(168,85,247,0.04)">
+        <span class="cs-icon">✨</span>
+        <span style="color:var(--purple)">Rich Results</span>
+      </div>
+      <div class="crawl-section-body ${richItems.length?'single':''}">
+        ${richItems.length
+          ? richItems.map(i=>`<div class="crawl-kv"><div class="ck">${he(i.richResultType||'Type')}</div><div class="cv blue">${(i.items||[]).length} item${(i.items||[]).length!==1?'s':''} detected</div></div>`).join('')
+          : kv('Status', rich.verdict||'—', rich.verdict==='PASS'?'good':rich.verdict==='FAIL'?'bad':'')
+        }
+      </div>
+    </div>`;
+  }
+
+  // ── AMP ──
+  if(amp.verdict){
+    html += `<div class="crawl-section">
+      <div class="crawl-section-hdr" style="background:rgba(245,158,11,0.04)">
+        <span class="cs-icon">⚡</span>
+        <span style="color:var(--orange)">AMP</span>
+      </div>
+      <div class="crawl-section-body">
+        ${kv('AMP Status', amp.verdict||'—', amp.verdict==='PASS'?'good':amp.verdict==='FAIL'?'bad':'')}
+        ${amp.ampUrl?kv('AMP URL', amp.ampUrl.slice(0,50)+'…'):''}
+      </div>
+    </div>`;
+  }
+
+  // ── Referring URLs drill-down ──
+  if(idx.referringUrls && idx.referringUrls.length){
+    html += `<div class="crawl-section">
+      <div class="crawl-section-hdr" style="background:rgba(0,255,136,0.04)">
+        <span class="cs-icon">🔗</span>
+        <span style="color:var(--accent)">Referring URLs Seen by Googlebot (${idx.referringUrls.length})</span>
+      </div>
+      <div class="crawl-section-body single">
+        ${idx.referringUrls.map(u=>`<div class="crawl-kv"><div class="cv blue" style="font-size:.62rem"><a href="${he(u)}" target="_blank" style="color:var(--blue);text-decoration:none">${he(u.slice(0,80))}${u.length>80?'…':''}</a></div></div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function kv(key, val, cls=''){
+  return `<div class="crawl-kv"><div class="ck">${he(key)}</div><div class="cv ${cls}">${he(String(val))}</div></div>`;
+}
+function fmtDate(iso){
+  try{ return new Date(iso).toLocaleString(); }catch(e){ return iso; }
+}
+function robotsColor(s){ return !s||s==='ALLOWED'?'good': s==='DISALLOWED'?'bad':'warn'; }
+function indexingColor(s){ return !s||s==='INDEXING_ALLOWED'?'good': s.includes('BLOCKED')||s.includes('FORBIDDEN')?'bad':'warn'; }
+function fetchColor(s){ return !s||s==='SUCCESSFUL'?'good': s==='SOFT_404'||s==='REDIRECT_ERROR'?'warn': s==='ACCESS_DENIED'||s==='NOT_FOUND'?'bad':''; }
 
 // ── Escape ────────────────────────────────────────────────
 function he(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
