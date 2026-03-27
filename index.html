@@ -1,3116 +1,483 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IndexCore — Real URL Indexing Engine</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+<title>Backlink Shortener</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
   --bg: #f8f9fb;
   --surface: #ffffff;
-  --surface2: #f3f4f6;
-  --surface3: #e9eaec;
   --border: #e2e4e8;
-  --border2: #d0d3d9;
   --accent: #16a34a;
-  --accent-dim: rgba(22,163,74,0.08);
-  --accent2: #2563eb;
-  --accent2-dim: rgba(37,99,235,0.08);
-  --warn: #d97706;
-  --warn-dim: rgba(217,119,6,0.08);
-  --danger: #dc2626;
-  --danger-dim: rgba(220,38,38,0.08);
-  --purple: #7c3aed;
-  --purple-dim: rgba(124,58,237,0.08);
+  --accent-dim: rgba(22,163,74,0.09);
   --text: #1a1d23;
   --muted: #6b7280;
   --muted2: #9ca3af;
-  --font-display: 'Syne', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
+  --font-display: 'Syne', sans-serif;
 }
 
-html { scroll-behavior: smooth; }
 body {
   font-family: var(--font-mono);
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   font-size: 13px;
-  overflow-x: hidden;
 }
 
-/* grid texture removed for light theme */
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+}
 
-.app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
-
-/* ── TOPBAR ── */
-.topbar {
-  height: 56px;
-  border-bottom: 1px solid var(--border);
+/* ── Header ── */
+.header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  background: rgba(255,255,255,0.97);
-  backdrop-filter: blur(20px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  flex-shrink: 0;
+  gap: 12px;
+  margin-bottom: 36px;
 }
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.brand-icon {
-  width: 34px; height: 34px;
+.logo {
+  width: 36px; height: 36px;
   background: var(--accent);
-  border-radius: 8px;
+  border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
-  color: #fff;
-  animation: iconPulse 3s ease-in-out infinite;
-  flex-shrink: 0;
+  font-size: 18px;
+  animation: pulse 3s ease-in-out infinite;
 }
-
-@keyframes iconPulse {
+@keyframes pulse {
   0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.35); }
-  50% { box-shadow: 0 0 0 10px rgba(22,163,74,0); }
+  50%      { box-shadow: 0 0 0 8px rgba(22,163,74,0); }
 }
-
-.brand-name {
+.header-text h1 {
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 800;
-  color: var(--text);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
-
-.brand-sub {
-  font-size: 0.58rem;
+.header-text p {
+  font-size: 0.68rem;
   color: var(--muted);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin-top: 2px;
 }
 
-.topbar-right {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.pill {
-  font-size: 0.6rem;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-}
-
-.pill-green { background: var(--accent-dim); color: var(--accent); border-color: rgba(22,163,74,0.25); }
-.pill-blue { background: var(--accent2-dim); color: var(--accent2); border-color: rgba(37,99,235,0.25); }
-.pill-orange { background: var(--warn-dim); color: var(--warn); border-color: rgba(217,119,6,0.25); }
-
-.dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: dotBlink 1.4s ease-in-out infinite;
-}
-@keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-/* ── LAYOUT ── */
-.layout {
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  flex: 1;
-  min-height: 0;
-}
-
-/* ── SIDEBAR ── */
-.sidebar {
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
-  height: calc(100vh - 56px);
-  position: sticky;
-  top: 56px;
-  padding: 20px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  background: rgba(248,249,251,0.9);
-}
-@media(max-width:900px){
-  .sidebar {
-    height: auto;
-    position: static;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-  .main {
-    height: auto !important;
-    position: static !important;
-    overflow-y: visible !important;
-  }
-}
-
-.sidebar::-webkit-scrollbar { width: 3px; }
-.sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-/* ── CARDS ── */
-.card {
+/* ── Input box ── */
+.input-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  flex-shrink: 0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
+.input-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+textarea {
+  width: 100%;
+  height: 130px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  line-height: 1.6;
+}
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--muted2); }
 
-.card-head {
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border);
+.input-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--surface2);
+  margin-top: 10px;
 }
-
-.card-title {
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 7px;
+.url-count {
+  font-size: 0.62rem;
+  color: var(--muted2);
 }
-
-.card-body { padding: 14px; }
-
-/* ── FORM ── */
-label {
-  display: block;
-  font-size: 0.58rem;
+.btn-clear {
+  font-size: 0.62rem;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 5px;
-}
-
-textarea, input[type="text"] {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 7px;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  padding: 9px 11px;
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  line-height: 1.7;
-}
-
-textarea { resize: vertical; min-height: 140px; }
-textarea::placeholder { color: var(--muted2); font-size: 0.62rem; }
-
-textarea:focus, input:focus {
-  border-color: var(--accent2);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-}
-
-.form-group { margin-bottom: 11px; }
-
-/* ── BUTTONS ── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 10px 16px;
-  border-radius: 7px;
+  background: none;
   border: none;
   cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  transition: all 0.15s;
-  width: 100%;
-  margin-bottom: 7px;
-  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 5px;
+  transition: background 0.1s;
 }
-.btn:last-child { margin-bottom: 0; }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-clear:hover { background: var(--bg); color: #dc2626; }
 
-.btn-primary {
-  background: var(--accent);
-  color: #000;
-  font-size: 0.78rem;
-  padding: 12px;
-  letter-spacing: 0.08em;
-}
-.btn-primary:hover:not(:disabled) {
-  background: #00f080;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(22,163,74,0.3);
-}
-
-.btn-secondary {
-  background: var(--accent2-dim);
-  color: var(--accent2);
-  border: 1px solid rgba(0,170,255,0.2);
-}
-.btn-secondary:hover:not(:disabled) { background: rgba(0,170,255,0.12); }
-
-.btn-ghost {
-  background: var(--surface2);
-  color: var(--muted);
-  border: 1px solid var(--border2);
-  font-size: 0.62rem;
-  padding: 7px 12px;
-}
-.btn-ghost:hover { color: var(--text); }
-
-.btn-danger {
-  background: var(--danger-dim);
-  color: var(--danger);
-  border: 1px solid rgba(255,64,96,0.2);
-}
-
-/* ── TABS ── */
-.tabs {
+/* ── Results ── */
+.results-header {
   display: flex;
-  border-bottom: 1px solid var(--border);
-}
-
-.tab {
-  padding: 9px 16px;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: color 0.15s, border-color 0.15s;
-}
-.tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
-.tab:hover:not(.active) { color: var(--text); }
-
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
-
-/* ── ALERT ── */
-.alert {
-  padding: 9px 12px;
-  border-radius: 7px;
-  font-size: 0.67rem;
-  line-height: 1.6;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 10px;
 }
-.alert-green { background: var(--accent-dim); border: 1px solid rgba(13,255,140,0.2); color: var(--accent); }
-.alert-blue { background: var(--accent2-dim); border: 1px solid rgba(0,170,255,0.2); color: var(--accent2); }
-.alert-orange { background: var(--warn-dim); border: 1px solid rgba(255,170,0,0.2); color: var(--warn); }
-
-/* ── MAIN ── */
-.main {
-  overflow-y: auto;
-  height: calc(100vh - 56px);
-  position: sticky;
-  top: 56px;
-  padding: 20px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.main::-webkit-scrollbar { width: 3px; }
-.main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-@media(max-width:900px){ .layout { grid-template-columns: 1fr; } }
-
-/* ── STATS GRID ── */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-
-@media(max-width:700px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
-
-.stat-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-box::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-}
-.stat-box.g::after { background: linear-gradient(90deg, var(--accent), transparent); }
-.stat-box.b::after { background: linear-gradient(90deg, var(--accent2), transparent); }
-.stat-box.o::after { background: linear-gradient(90deg, var(--warn), transparent); }
-.stat-box.p::after { background: linear-gradient(90deg, var(--purple), transparent); }
-
-.stat-num {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1;
-  margin-bottom: 3px;
-}
-.stat-box.g .stat-num { color: var(--accent); }
-.stat-box.b .stat-num { color: var(--accent2); }
-.stat-box.o .stat-num { color: var(--warn); }
-.stat-box.p .stat-num { color: var(--purple); }
-
-.stat-lbl {
-  font-size: 0.58rem;
+.results-title {
+  font-size: 0.65rem;
+  font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
-
-@keyframes statPop {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.06); }
-  100% { transform: scale(1); }
+.btn-copy-all {
+  font-size: 0.62rem;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(22,163,74,0.25);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  transition: background 0.15s;
 }
-.stat-box.pop { animation: statPop 0.3s ease; }
+.btn-copy-all:hover { background: rgba(22,163,74,0.16); }
 
-/* ── CRAWL SURFACE ── */
-.surface-card {
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted2);
+  font-size: 0.72rem;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}
+
+/* ── Link rows ── */
+.link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.link-row {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  overflow: hidden;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  transition: border-color 0.15s;
 }
+.link-row:hover { border-color: rgba(22,163,74,0.35); }
 
-.surface-head {
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--border);
+.row-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 8px;
-  background: var(--surface2);
 }
-
-.url-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1px;
-  background: var(--border);
-  max-height: 400px;
-  overflow-y: auto;
+.short-url {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.short-url:hover { text-decoration: underline; }
 
-.url-grid::-webkit-scrollbar { width: 3px; }
-.url-grid::-webkit-scrollbar-thumb { background: var(--border2); }
+.btn-copy {
+  font-size: 0.58rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(22,163,74,0.25);
+  border-radius: 5px;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.btn-copy:hover { background: rgba(22,163,74,0.18); }
+.btn-copy.copied { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-.url-cell {
-  background: var(--surface2);
-  padding: 7px 12px;
+.row-bottom {
   display: flex;
   align-items: center;
-  gap: 7px;
-  transition: background 0.12s;
-  animation: cellIn 0.2s ease;
+  gap: 6px;
+  padding-left: 2px;
 }
-
-@keyframes cellIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
-
-.url-cell:hover { background: var(--accent-dim); }
-
-.url-cell a {
-  font-size: 0.62rem;
-  color: var(--accent2);
-  text-decoration: none;
+.arrow-label {
+  font-size: 0.55rem;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.orig-url {
+  font-size: 0.65rem;
+  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+  text-decoration: none;
 }
-.url-cell a:hover { color: var(--accent); }
-.url-cell-badge {
-  font-size: 0.5rem;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: var(--accent-dim);
-  color: var(--accent);
-  flex-shrink: 0;
-  border: 1px solid rgba(13,255,140,0.2);
-}
+.orig-url:hover { color: var(--text); }
 
-/* Status badges on URL cells */
-.url-status {
-  font-size: 0.5rem;
-  padding: 1px 5px;
-  border-radius: 3px;
-  flex-shrink: 0;
-  font-weight: 700;
-  border: 1px solid;
-}
-.url-status.indexed { background: var(--accent-dim); color: var(--accent); border-color: rgba(13,255,140,0.2); }
-.url-status.pending { background: var(--warn-dim); color: var(--warn); border-color: rgba(255,170,0,0.2); animation: dotBlink 1.4s infinite; }
-.url-status.crawled { background: var(--accent2-dim); color: var(--accent2); border-color: rgba(0,170,255,0.2); }
-.url-status.error { background: var(--danger-dim); color: var(--danger); border-color: rgba(255,64,96,0.2); }
-.url-status.unknown { background: var(--surface3); color: var(--muted); border-color: var(--border2); }
-
-/* ── LOG ── */
-.log-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  flex: 1;
-}
-
-.log-head {
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.log-body {
-  height: 320px;
-  overflow-y: auto;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.log-body::-webkit-scrollbar { width: 3px; }
-.log-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-.log-row {
-  display: grid;
-  grid-template-columns: 58px 72px 1fr;
-  gap: 8px;
-  padding: 3px 7px;
-  border-radius: 4px;
-  align-items: start;
-  animation: cellIn 0.18s ease;
-  font-size: 0.63rem;
-}
-.log-row:hover { background: var(--surface2); }
-.log-time { color: var(--muted2); }
-.log-type { font-weight: 600; }
-.log-type.system { color: var(--muted); }
-.log-type.ping { color: var(--accent); }
-.log-type.gsc { color: var(--purple); }
-.log-type.success { color: var(--accent); }
-.log-type.error { color: var(--danger); }
-.log-type.info { color: var(--accent2); }
-.log-type.crawl { color: var(--warn); }
-.log-msg { color: var(--muted); word-break: break-all; line-height: 1.5; }
-
-/* ── GSC REPORT ── */
-.report-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  display: none;
-}
-
-.report-head {
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  background: var(--surface2);
-}
-
-.report-body {
-  max-height: 420px;
-  overflow-y: auto;
-  padding: 6px;
-}
-
-.report-body::-webkit-scrollbar { width: 3px; }
-.report-body::-webkit-scrollbar-thumb { background: var(--border2); }
-
-.report-row {
-  display: grid;
-  grid-template-columns: 56px 90px 80px 1fr auto;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 6px;
-  margin-bottom: 3px;
-  border: 1px solid var(--border);
-  background: var(--surface2);
-  align-items: center;
-  font-size: 0.62rem;
-  animation: cellIn 0.2s ease;
-}
-
-.report-row.indexed { border-color: rgba(13,255,140,0.2); }
-.report-row.pending { border-color: rgba(255,170,0,0.2); }
-.report-row.error { border-color: rgba(255,64,96,0.2); }
-
-.rr-time { color: var(--muted2); font-size: 0.58rem; }
-.rr-verdict {
-  font-weight: 700;
-  font-size: 0.58rem;
-  padding: 2px 7px;
-  border-radius: 4px;
-  text-align: center;
-}
-.rr-verdict.indexed { background: var(--accent-dim); color: var(--accent); }
-.rr-verdict.pending { background: var(--warn-dim); color: var(--warn); }
-.rr-verdict.crawled { background: var(--accent2-dim); color: var(--accent2); }
-.rr-verdict.error { background: var(--danger-dim); color: var(--danger); }
-.rr-verdict.unknown { background: var(--surface3); color: var(--muted); }
-
-.rr-coverage { color: var(--muted); font-size: 0.58rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rr-url { color: var(--accent2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rr-url a { color: inherit; text-decoration: none; }
-.rr-url a:hover { text-decoration: underline; }
-.rr-action { color: var(--muted2); font-size: 0.58rem; text-align: right; }
-
-/* ── PING PROGRESS ── */
-.ping-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.ping-list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 10px;
-}
-
-.ping-row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  transition: border-color 0.2s, background 0.2s;
-  font-size: 0.67rem;
-}
-
-.ping-row.firing { border-color: var(--warn); background: rgba(255,170,0,0.04); }
-.ping-row.done { border-color: rgba(13,255,140,0.25); }
-.ping-row.error { border-color: rgba(255,64,96,0.25); }
-
-.ping-icon { font-size: 0.85rem; width: 20px; text-align: center; flex-shrink: 0; }
-.ping-name { flex: 1; color: var(--text); }
-.ping-badge {
-  font-size: 0.55rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 3px;
-  min-width: 44px;
-  text-align: center;
-  border: 1px solid;
-}
-.ping-badge.idle { background: var(--surface); color: var(--muted); border-color: var(--border); }
-.ping-badge.firing { background: var(--warn-dim); color: var(--warn); border-color: rgba(255,170,0,0.3); animation: dotBlink 0.5s infinite; }
-.ping-badge.done { background: var(--accent-dim); color: var(--accent); border-color: rgba(13,255,140,0.3); }
-.ping-badge.error { background: var(--danger-dim); color: var(--danger); border-color: rgba(255,64,96,0.3); }
-.ping-badge.skip { background: var(--surface2); color: var(--muted2); border-color: var(--border); }
-
-/* ── COUNTDOWN ── */
-.countdown {
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--accent2);
-  letter-spacing: 0.05em;
-}
-
-/* ── TOAST ── */
-#toast-zone {
-  position: fixed;
-  bottom: 20px; right: 20px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  max-width: 320px;
-}
-
+/* ── Toast ── */
 .toast {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1a1d23;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 8px 18px;
   border-radius: 8px;
-  padding: 9px 13px;
-  font-size: 0.7rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  animation: toastIn 0.2s ease, toastOut 0.2s ease 3.8s forwards;
-}
-.toast.success { border-color: rgba(13,255,140,0.3); }
-.toast.info { border-color: rgba(0,170,255,0.3); }
-.toast.warn { border-color: rgba(255,170,0,0.3); }
-.toast.error { border-color: rgba(255,64,96,0.3); }
-
-@keyframes toastIn { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:translateX(0); } }
-@keyframes toastOut { from { opacity:1; } to { opacity:0; pointer-events:none; } }
-
-/* ── SECTION DIVIDER ── */
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 10px 0;
-}
-
-/* Export row */
-.export-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 4px; }
-
-/* ── GSC STEPS ── */
-.gsc-steps { font-size: 0.6rem; color: var(--muted); line-height: 1.7; margin-top: 6px; }
-.gsc-steps li { margin-left: 14px; }
-.gsc-steps a { color: var(--accent2); }
-
-/* Section header */
-.section-hdr {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.section-line {
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-.section-lbl {
-  font-size: 0.58rem;
-  color: var(--muted2);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  pointer-events: none;
+  opacity: 0;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+  z-index: 999;
   white-space: nowrap;
 }
-
-/* select */
-select {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 7px;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  padding: 9px 11px;
-  outline: none;
-  cursor: pointer;
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
-select:focus { border-color: var(--accent2); }
-
-/* Empty state */
-.empty-state {
-  text-align: center;
-  padding: 32px 20px;
-  color: var(--muted);
-  font-size: 0.68rem;
-  line-height: 1.8;
-}
-
-/* Status summary bar */
-.summary-bar {
-  display: flex;
-  gap: 8px;
-  padding: 8px 14px;
-  background: var(--surface2);
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.sum-chip {
-  font-size: 0.6rem;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 4px;
-  border: 1px solid;
-}
-.sum-chip.g { background: var(--accent-dim); color: var(--accent); border-color: rgba(22,163,74,0.25); }
-.sum-chip.b { background: var(--accent2-dim); color: var(--accent2); border-color: rgba(0,170,255,0.2); }
-.sum-chip.o { background: var(--warn-dim); color: var(--warn); border-color: rgba(255,170,0,0.2); }
-.sum-chip.r { background: var(--danger-dim); color: var(--danger); border-color: rgba(255,64,96,0.2); }
-
-/* Auto-check toggle */
-.toggle-wrap {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 11px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 7px;
-  cursor: pointer;
-  margin-bottom: 10px;
-}
-.toggle-wrap input { accent-color: var(--accent2); width: 13px; height: 13px; cursor: pointer; }
-.toggle-wrap label { font-size: 0.67rem; color: var(--accent2); cursor: pointer; margin: 0; text-transform: none; letter-spacing: 0; }
-
-/* GSC tab panels */
-.gsc-tab-panel { display: none; padding: 13px; }
-.gsc-tab-panel.active { display: block; }
-
-/* Badge */
-.badge {
-  font-size: 0.56rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 3px;
-  border: 1px solid;
-}
-.badge-green { background: var(--accent-dim); color: var(--accent); border-color: rgba(22,163,74,0.25); }
-.badge-blue { background: var(--accent2-dim); color: var(--accent2); border-color: rgba(0,170,255,0.2); }
-.badge-orange { background: var(--warn-dim); color: var(--warn); border-color: rgba(255,170,0,0.2); }
-.badge-purple { background: var(--purple-dim); color: var(--purple); border-color: rgba(157,111,255,0.2); }
-
-/* Progress bar */
-.prog-wrap { margin-bottom: 8px; }
-.prog-meta { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--muted); margin-bottom: 4px; }
-.prog-track { height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; width: 0%; }
-.prog-fill.g { background: var(--accent); }
-.prog-fill.b { background: var(--accent2); }
-.prog-fill.o { background: var(--warn); }
-
-/* Interval selector row */
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 10px; }
-
-/* ── SUPABASE CONFIG PANEL ── */
-.sb-bar { display: none !important; }
-/* no bottom padding needed since bar is hidden */
-.app { padding-bottom: 0; }
-
-/* ── GOOGLEBOT VISIT LOG FOOTER ── */
-.botlog-footer {
-  padding: 0 22px 22px;
-  background: var(--bg);
-  position: relative;
-  z-index: 1;
-  border-top: 1px solid var(--border);
-}
-.botlog-top-row {
-  display: flex;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--border);
-}
-.botlog-stats-row {
-  display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 1px;
-  background: var(--border);
-  border-bottom: 1px solid var(--border);
-}
-@media(max-width:700px){
-  .botlog-footer { padding: 0 12px 80px; }
-  .botlog-top-row { flex-direction: column; }
-}
-/* ── GOOGLEBOT VISIT LOG ── */
-.botlog-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.botlog-head {
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-  background: var(--surface2);
-}
-.botlog-hero {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 16px;
-  background: var(--accent-dim);
-}
-.botlog-hero-icon { font-size: 2rem; flex-shrink: 0; filter: drop-shadow(0 0 8px rgba(13,255,140,0.4)); }
-.botlog-last { flex: 1; }
-.botlog-last-label { font-size: 0.56rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 3px; }
-.botlog-last-time { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--accent); line-height: 1; margin-bottom: 2px; }
-.botlog-last-exact { font-size: 0.62rem; color: var(--muted); }
-.botlog-stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
-.botlog-stat { background: var(--surface2); padding: 10px 14px; text-align: center; }
-.botlog-stat-num { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; line-height: 1; margin-bottom: 2px; }
-.botlog-stat-lbl { font-size: 0.56rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
-.botlog-stat.g .botlog-stat-num { color: var(--accent); }
-.botlog-stat.b .botlog-stat-num { color: var(--accent2); }
-.botlog-stat.o .botlog-stat-num { color: var(--warn); }
-.botlog-body { max-height: 400px; overflow-y: auto; padding: 6px; }
-.botlog-body::-webkit-scrollbar { width: 3px; }
-.botlog-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-.botvisit-row {
-  display: grid; grid-template-columns: 28px 1fr auto auto;
-  gap: 10px; padding: 8px 10px; border-radius: 6px; margin-bottom: 3px;
-  border: 1px solid var(--border); background: var(--surface2);
-  align-items: center; font-size: 0.62rem; animation: cellIn 0.25s ease; transition: border-color 0.2s;
-}
-.botvisit-row:hover { border-color: var(--accent2); }
-.botvisit-row.googlebot { border-left: 3px solid var(--accent); }
-.botvisit-row.bingbot { border-left: 2px solid var(--accent2); }
-.botvisit-row.other { border-left: 2px solid var(--purple); }
-.botvisit-row.user { border-left: 2px solid var(--muted2); opacity: 0.55; }
-.bv-icon { font-size: 1rem; text-align: center; }
-.bv-info { min-width: 0; }
-.bv-bot { font-weight: 700; color: var(--text); margin-bottom: 1px; }
-.bv-bot.googlebot { color: var(--accent); }
-.bv-bot.bingbot { color: var(--accent2); }
-.bv-bot.other { color: var(--purple); }
-.bv-bot.user { color: var(--muted); }
-.bv-ua { font-size: 0.54rem; color: var(--muted2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bv-ago { font-size: 0.6rem; color: var(--accent); font-weight: 600; white-space: nowrap; text-align: right; }
-.bv-ago.old { color: var(--muted); }
-.bv-exact { font-size: 0.56rem; color: var(--muted2); white-space: nowrap; text-align: right; }
-.botlog-empty { text-align: center; padding: 28px 16px; color: var(--muted2); font-size: 0.67rem; line-height: 1.8; }
-@keyframes botAlert {
-  0%   { box-shadow: 0 0 0 0 rgba(13,255,140,0.6); border-color: var(--accent); }
-  70%  { box-shadow: 0 0 0 12px rgba(13,255,140,0); }
-  100% { box-shadow: 0 0 0 0 rgba(13,255,140,0); border-color: var(--border); }
-}
-.bot-alert { animation: botAlert 1.4s ease; }
-@keyframes spinWait { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-.spin { display:inline-block; animation: spinWait 2s linear infinite; }
 </style>
 </head>
 <body>
 
-<div class="app">
+<div class="wrap">
 
-  <!-- ── TOPBAR ── -->
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-icon">⚡</div>
-      <div>
-        <div class="brand-name">IndexCore</div>
-        <div class="brand-sub">Real Indexing Engine</div>
-      </div>
-    </div>
-    <div class="topbar-right">
-      <div class="pill pill-green"><span class="dot"></span><span id="hdr-status">READY</span></div>
-      <div class="pill pill-blue">URLs <strong id="hdr-urls">0</strong></div>
-      <div class="pill pill-orange">Indexed <strong id="hdr-indexed">0</strong></div>
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">🔗</div>
+    <div class="header-text">
+      <h1>Backlink Shortener</h1>
+      <p>Paste URLs → auto-generates 301 short links via indexernow.vercel.app</p>
     </div>
   </div>
 
-  <div class="layout">
-
-    <!-- ── SIDEBAR ── -->
-    <div class="sidebar">
-
-      <!-- Step 1: URLs -->
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">① URL Input</div>
-          <div class="badge badge-blue" id="url-badge">0 URLs</div>
-        </div>
-        <div class="card-body">
-          <div class="form-group">
-            <label>Paste URLs — one per line</label>
-            <textarea id="url-input" placeholder="https://yourdomain.com/page-1
-https://medium.com/@you/article
-https://dev.to/you/post
-https://reddit.com/r/seo/comments/..." oninput="onUrlChange()"></textarea>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost" style="margin:0;flex:1;" onclick="sortUrls()">↕ Sort</button>
-            <button class="btn btn-ghost" style="margin:0;flex:1;" onclick="dedupUrls()">✦ Dedup</button>
-            <button class="btn btn-ghost" style="margin:0;flex:1;" onclick="clearUrls()">✕ Clear</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 4: GSC API -->
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">④ GSC Status Checker</div>
-          <div class="badge badge-purple" id="gsc-badge">NOT SET</div>
-        </div>
-        <div class="card-body" style="padding:0;">
-          <!-- mode tabs -->
-          <div class="tabs" style="padding:0 10px;">
-            <button class="tab" id="tab-oauth" onclick="switchGscMode('oauth',this)">OAuth (1hr)</button>
-            <button class="tab active" id="tab-sa" onclick="switchGscMode('sa',this)">🔑 Service Acct ✓ RECOMMENDED</button>
-          </div>
-
-          <!-- OAuth panel -->
-          <div class="gsc-tab-panel" id="gsc-panel-oauth">
-            <div class="alert alert-orange" style="margin-bottom:9px;">⚠️ OAuth expires every ~1hr. Use Service Account for permanent access — no refresh needed ever.</div>
-            <div class="form-group">
-              <label>OAuth 2.0 Access Token</label>
-              <input type="text" id="gsc-token" placeholder="ya29.your-token-here" oninput="onGscChange()">
-            </div>
-            <div class="form-group">
-              <label>GSC Property URL</label>
-              <input type="text" id="gsc-site-oauth" placeholder="https://yourdomain.com/" oninput="onGscChange()">
-            </div>
-            <div class="gsc-steps">
-              <strong style="color:var(--text);">Get token:</strong>
-              <ol class="gsc-steps">
-                <li>Go to <a href="https://developers.google.com/oauthplayground/" target="_blank">OAuth Playground ↗</a></li>
-                <li>Select scope: <code>webmasters</code></li>
-                <li>Authorize → Exchange → copy Access token</li>
-              </ol>
-            </div>
-          </div>
-
-          <!-- SA panel -->
-          <div class="gsc-tab-panel active" id="gsc-panel-sa">
-            <div class="alert alert-green" style="margin-bottom:9px;">🔑 <strong>Permanent token — never expires.</strong> Same as clicking "Request Indexing" inside GSC for every URL simultaneously. No manual refresh needed.</div>
-            <div class="form-group">
-              <label>Service Account JSON Key</label>
-              <textarea id="sa-json" placeholder='{"type":"service_account","client_email":"...","private_key":"-----BEGIN RSA PRIVATE KEY-----\n..."}' style="min-height:90px;font-size:0.58rem;" oninput="onGscChange()"></textarea>
-            </div>
-            <div class="form-group">
-              <label>GSC Property URL</label>
-              <input type="text" id="gsc-site-sa" placeholder="https://yourdomain.com/" oninput="onGscChange()">
-            </div>
-            <button class="btn btn-secondary" style="font-size:0.62rem;padding:7px;" onclick="testSA()">🧪 Test Connection</button>
-            <div id="sa-status" style="margin-top:6px;font-size:0.6rem;display:none;"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Settings -->
-      <div class="card">
-        <div class="card-head"><div class="card-title">⚙️ Settings</div></div>
-        <div class="card-body">
-          <div class="form-row">
-            <div>
-              <label>Check Interval</label>
-              <select id="check-interval" onchange="saveSetting('ic_interval',this.value)">
-                <option value="60">1 min</option>
-                <option value="120" selected>2 min</option>
-                <option value="300">5 min</option>
-                <option value="600">10 min</option>
-              </select>
-            </div>
-            <div>
-              <label>GSC per Cycle</label>
-              <select id="gsc-per-cycle" onchange="saveSetting('ic_gscper',this.value)">
-                <option value="5">5 (safe)</option>
-                <option value="10" selected>10</option>
-                <option value="20">20 (max)</option>
-              </select>
-            </div>
-          </div>
-          <div class="toggle-wrap">
-            <input type="checkbox" id="auto-check" checked>
-            <label for="auto-check">🔄 Auto re-check pending URLs each cycle</label>
-          </div>
-          <div class="toggle-wrap" style="border-color:rgba(13,255,140,0.15);">
-            <input type="checkbox" id="notify-indexed" checked>
-            <label for="notify-indexed" style="color:var(--accent);">🔔 Alert when URL gets indexed</label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div>
-        <button class="btn btn-primary" id="launch-btn" onclick="launchEngine()">⚡ LAUNCH ENGINE</button>
-        <button class="btn btn-secondary" onclick="runGscCheckNow()">🔍 Check GSC Status Now</button>
-        <button class="btn btn-secondary" onclick="firePingsNow()">📡 Fire All Pings Now</button>
-        <div class="divider"></div>
-        <div class="export-row">
-          <button class="btn btn-ghost" onclick="exportSitemap()">🗺️ Sitemap</button>
-          <button class="btn btn-ghost" onclick="exportReport()">📋 Report</button>
-        </div>
-        <div class="divider"></div>
-        <button class="btn btn-danger" onclick="stopEngine()">⏹ Stop Engine</button>
-      </div>
-
-      <!-- Ping engines -->
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">② &amp; ③ Ping Engines</div>
-          <div class="badge badge-green" id="eng-armed">4 Armed</div>
-        </div>
-        <div class="ping-list">
-          <div class="ping-row" id="eng-websub">
-            <span class="ping-icon">📡</span>
-            <span class="ping-name">WebSub / PubSubHubbub</span>
-            <span class="ping-badge idle" id="eng-websub-s">IDLE</span>
-          </div>
-          <div class="ping-row" id="eng-google">
-            <span class="ping-icon">🌐</span>
-            <span class="ping-name">Google Sitemap Ping</span>
-            <span class="ping-badge idle" id="eng-google-s">IDLE</span>
-          </div>
-          <div class="ping-row" id="eng-bing">
-            <span class="ping-icon">🔷</span>
-            <span class="ping-name">Bing Sitemap Ping</span>
-            <span class="ping-badge idle" id="eng-bing-s">IDLE</span>
-          </div>
-          <div class="ping-row" id="eng-rpc">
-            <span class="ping-icon">🏓</span>
-            <span class="ping-name">XML-RPC Blog Pings</span>
-            <span class="ping-badge idle" id="eng-rpc-s">IDLE</span>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /sidebar -->
-
-    <!-- ── MAIN ── -->
-    <div class="main">
-
-      <!-- Stats -->
-      <div class="stats-grid">
-        <div class="stat-box g">
-          <div class="stat-num" id="stat-indexed">0</div>
-          <div class="stat-lbl">Confirmed Indexed</div>
-        </div>
-        <div class="stat-box b">
-          <div class="stat-num" id="stat-crawled">0</div>
-          <div class="stat-lbl">Crawled (Not Indexed)</div>
-        </div>
-        <div class="stat-box o">
-          <div class="stat-num" id="stat-pending">0</div>
-          <div class="stat-lbl">Pending / Queued</div>
-        </div>
-        <div class="stat-box p">
-          <div class="stat-num" id="stat-pings">0</div>
-          <div class="stat-lbl">Pings Fired</div>
-        </div>
-      </div>
-
-      <!-- Progress bars -->
-      <div class="ping-card">
-        <div class="card-head">
-          <div class="card-title">📊 Coverage Progress</div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:0.6rem;color:var(--muted);">Next check:</span>
-            <div class="countdown" id="countdown">--:--</div>
-          </div>
-        </div>
-        <div style="padding:14px 16px;">
-          <div class="prog-wrap">
-            <div class="prog-meta"><span>Indexed by Google</span><strong id="pv-indexed">0%</strong></div>
-            <div class="prog-track"><div class="prog-fill g" id="pf-indexed"></div></div>
-          </div>
-          <div class="prog-wrap">
-            <div class="prog-meta"><span>Crawled (seen, not indexed)</span><strong id="pv-crawled">0%</strong></div>
-            <div class="prog-track"><div class="prog-fill b" id="pf-crawled"></div></div>
-          </div>
-          <div class="prog-wrap" style="margin:0;">
-            <div class="prog-meta"><span>Still pending</span><strong id="pv-pending">0%</strong></div>
-            <div class="prog-track"><div class="prog-fill o" id="pf-pending"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SEO-structured public index for Googlebots — hidden visually but fully crawlable -->
-      <div id="seo-public-index" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;" aria-hidden="false">
-        <h1 id="seo-h1">Backlink Campaign Index — All Submitted URLs</h1>
-        <p>This page contains all active backlink campaign URLs submitted for crawling and indexing. Updated in real time as new URLs are added.</p>
-        <h2 id="seo-h2-all">All Submitted Backlink URLs</h2>
-        <ul id="seo-url-list"></ul>
-        <h2 id="seo-h2-indexed">Confirmed Indexed URLs</h2>
-        <ul id="seo-indexed-list"></ul>
-        <h2 id="seo-h2-pending">Pending Crawl Queue</h2>
-        <ul id="seo-pending-list"></ul>
-        <h2 id="seo-h2-crawled">Crawled URLs (Awaiting Index)</h2>
-        <ul id="seo-crawled-list"></ul>
-      </div>
-
-      <!-- ② Crawl Surface — THE KEY MECHANISM -->
-      <div class="surface-card">
-        <div class="surface-head">
-          <div class="card-title">🕷️ ② Live Dofollow Crawl Surface</div>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-            <div class="badge badge-green">Googlebot bait</div>
-            <div class="badge badge-blue" id="surface-count">0 URLs live</div>
-            <button class="btn btn-ghost" style="margin:0;padding:4px 10px;font-size:0.58rem;" onclick="copyAllUrls()">📋 Copy All</button>
-          </div>
-        </div>
-        <div class="summary-bar" id="surface-summary" style="display:none;"></div>
-        <div class="url-grid" id="url-grid">
-          <div class="empty-state" style="grid-column:1/-1;">
-            Paste URLs in the sidebar → they appear here as live dofollow links.<br>
-            <span style="font-size:0.58rem;opacity:0.5;">Googlebot follows these links and discovers your URLs.</span>
-          </div>
-        </div>
-        <!-- Full hidden index for crawlers -->
-        <div id="full-index" style="padding:12px 14px;border-top:1px solid var(--border);display:none;">
-          <div style="font-size:0.58rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:7px;">Complete URL Index (visible to crawlers)</div>
-          <div id="all-links" style="columns:3;column-gap:12px;font-size:0.58rem;"></div>
-        </div>
-      </div>
-
-      <!-- ⑤ GSC Status Report -->
-      <div class="report-card" id="report-card">
-        <div class="report-head">
-          <div class="card-title" style="color:var(--purple);">⑤ GSC Indexing Status Report</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <span style="font-size:0.6rem;color:var(--muted);">
-              ✅ <span id="rep-indexed">0</span> indexed &nbsp;
-              🔷 <span id="rep-crawled">0</span> crawled &nbsp;
-              ⏳ <span id="rep-pending">0</span> pending &nbsp;
-              ❌ <span id="rep-error">0</span> errors
-            </span>
-            <button class="btn btn-ghost" style="margin:0;padding:4px 10px;font-size:0.58rem;" onclick="exportReport()">📥 Export</button>
-            <button class="btn btn-ghost" style="margin:0;padding:4px 10px;font-size:0.58rem;" onclick="clearReport()">✕ Clear</button>
-          </div>
-        </div>
-        <div class="report-body" id="report-body">
-          <div class="empty-state">No GSC checks run yet. Add credentials and click "Check GSC Status Now".</div>
-        </div>
-      </div>
-
-      <!-- Live Log -->
-      <div class="log-card">
-        <div class="log-head">
-          <div class="card-title"><span class="dot" style="color:var(--accent);"></span> Live Activity Log</div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost" style="margin:0;padding:4px 10px;font-size:0.58rem;" onclick="clearLog()">Clear</button>
-            <button class="btn btn-ghost" style="margin:0;padding:4px 10px;font-size:0.58rem;" onclick="exportLog()">Export</button>
-          </div>
-        </div>
-        <div class="log-body" id="log-body">
-          <div class="log-row">
-            <span class="log-time">--:--:--</span>
-            <span class="log-type system">SYSTEM</span>
-            <span class="log-msg">IndexCore ready. Add URLs + GSC credentials → click LAUNCH.</span>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /main -->
-  </div><!-- /layout -->
-
-  <!-- 🕷️ GOOGLEBOT VISIT LOG — Full width footer section -->
-  <div class="botlog-footer">
-    <div class="botlog-card" id="botlog-card">
-      <div class="botlog-head">
-        <div class="card-title">🕷️ Googlebot Visit Log</div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <div class="badge badge-green" id="botlog-live-badge"><span class="dot"></span> MONITORING</div>
-          <button class="btn btn-ghost" style="margin:0;padding:3px 9px;font-size:0.56rem;" onclick="clearBotLog()">✕ Clear</button>
-        </div>
-      </div>
-      <!-- Hero + stats in one row for wide layout -->
-      <div class="botlog-top-row">
-        <div class="botlog-hero" style="border:none;flex:1;min-width:220px;">
-          <div class="botlog-hero-icon" id="botlog-icon">⏳</div>
-          <div class="botlog-last">
-            <div class="botlog-last-label">Last Googlebot Visit</div>
-            <div class="botlog-last-time" id="botlog-ago"><span class="spin">◌</span> Waiting...</div>
-            <div class="botlog-last-exact" id="botlog-exact">No visits recorded yet — keep this page live &amp; linked</div>
-          </div>
-        </div>
-        <div class="botlog-stats-row" style="flex:2;border:none;background:transparent;">
-          <div class="botlog-stat g">
-            <div class="botlog-stat-num" id="bls-googlebot">0</div>
-            <div class="botlog-stat-lbl">Googlebot Visits</div>
-          </div>
-          <div class="botlog-stat b">
-            <div class="botlog-stat-num" id="bls-other">0</div>
-            <div class="botlog-stat-lbl">Other Bots</div>
-          </div>
-          <div class="botlog-stat o">
-            <div class="botlog-stat-num" id="bls-human">0</div>
-            <div class="botlog-stat-lbl">Human Visits</div>
-          </div>
-        </div>
-      </div>
-      <!-- Visit log list — horizontal scroll, full width -->
-      <div class="botlog-body" id="botlog-body">
-        <div class="botlog-empty" id="botlog-empty">
-          <span class="spin" style="font-size:1.4rem;">◌</span><br><br>
-          Monitoring for crawler visits...<br>
-          <span style="font-size:0.58rem;opacity:0.5;">Every page load is logged. Keep this page publicly accessible so Googlebot can visit.</span>
-        </div>
-      </div>
+  <!-- Input -->
+  <div class="input-card">
+    <div class="input-label">Paste backlink URLs (one per line)</div>
+    <textarea id="url-input" placeholder="https://www.kikyus.net/t20888-topic&#10;https://naijarave.com/thread/example&#10;https://forum.example.com/post/123" oninput="onInput()"></textarea>
+    <div class="input-footer">
+      <span class="url-count" id="url-count">0 URLs</span>
+      <button class="btn-clear" onclick="clearAll()">✕ Clear</button>
     </div>
   </div>
 
-</div><!-- /app -->
-
-<!-- Feed / sitemap links for crawlers -->
-<link rel="alternate" type="application/rss+xml" id="rss-link" title="IndexCore RSS" href="?feed=rss">
-<link rel="sitemap" type="application/xml" id="sitemap-link" href="?sitemap=xml">
-<link rel="hub" href="https://pubsubhubbub.appspot.com/">
-<link rel="hub" href="https://hub.feedburner.com">
-
-<!-- Toast zone -->
-<div id="toast-zone"></div>
-
-<!-- ── SUPABASE CONFIG BAR (bottom) ── -->
-<div class="sb-bar sb-bar-collapsed" id="sb-bar">
-  <button class="sb-toggle" onclick="sbToggle()">
-    <span class="sb-status-dot" id="sb-dot"></span>
-    <span id="sb-toggle-label">&#9889; Supabase Sync</span>
-    <span id="sb-toggle-status" style="color:var(--muted);font-weight:400;margin-left:4px;">&#8212; Not connected</span>
-    <span style="margin-left:auto;font-size:0.8rem;opacity:0.5;" id="sb-chevron">&#9650;</span>
-  </button>
-  <div class="sb-body" id="sb-body">
-    <div class="form-group" style="margin:0;">
-      <label>Supabase Project URL</label>
-      <input type="text" id="sb-url" placeholder="https://xxxx.supabase.co" oninput="sbDirty()">
+  <!-- Results -->
+  <div id="results-wrap">
+    <div class="empty" id="empty-state">Paste URLs above — short links appear here instantly.</div>
+    <div id="results-header" style="display:none;" class="results-header">
+      <span class="results-title" id="results-title">0 Short Links</span>
+      <button class="btn-copy-all" onclick="copyAll()">⎘ Copy All Short Links</button>
     </div>
-    <div class="form-group" style="margin:0;">
-      <label>Anon / Service Role Key</label>
-      <input type="text" id="sb-key" placeholder="eyJhbGciOiJI..." oninput="sbDirty()">
-    </div>
-    <div style="display:flex;gap:7px;align-items:center;">
-      <button class="sb-btn" id="sb-connect-btn" onclick="sbConnect()">Connect</button>
-      <button class="sb-schema-btn" onclick="sbCopySchema()">&#128203; Copy SQL Schema</button>
-    </div>
-    <div class="sb-msg" id="sb-msg"></div>
+    <div class="link-list" id="link-list"></div>
   </div>
+
 </div>
 
-<!-- JSON-LD crawl surface schema -->
-<script type="application/ld+json" id="jsonld-main">
-{"@context":"https://schema.org","@type":"WebPage","name":"IndexCore URL Surface","dateModified":"","mainEntity":{"@type":"ItemList","name":"URL Index","numberOfItems":0,"itemListElement":[]}}
-</script>
+<div class="toast" id="toast"></div>
 
 <script>
-'use strict';
-
-// ═══════════════════════════════════
-// STATE
-// ═══════════════════════════════════
-let urls = [];
-let isRunning = false;
-let cycleTimer = null, cdTimer = null, cdSecs = 0;
-let totalPings = 0;
-let gscMode = 'oauth';
-let saTokenCache = {};
-
-// URL status tracking: url → { verdict, coverage, lastCheck }
-let urlStatus = {};
-
-// Short URL map: originalUrl → shortCode  (e.g. "https://example.com/page" → "gsduh")
-// Reverse map:  shortCode → originalUrl
-let shortMap = {};     // original → code
-let shortMapRev = {};  // code    → original
+// ── Config ──────────────────────────────────────────────
 const SHORT_BASE = 'https://indexernow.vercel.app/link/';
+const SB_URL     = 'https://rbqfmhyuzdizaexbfcem.supabase.co';
+const SB_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJicWZtaHl1emRpemFleGJmY2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDQwOTIsImV4cCI6MjA5MDEyMDA5Mn0.jXYe6qqqc5NCxvMPVVhiGqMYXfyiQ92bj5eCQt2J4WM';
+const SB_HEADERS = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 
-// Report entries for export
-let reportEntries = [];
-let logEntries = [];
+// ── State ───────────────────────────────────────────────
+let shortMap    = {}; // original url → code
+let shortMapRev = {}; // code → original url
 
-// Stats counters
-let cntIndexed = 0, cntCrawled = 0, cntPending = 0, cntError = 0;
+// ── Init: load saved shortmap ───────────────────────────
+try {
+  const saved = JSON.parse(localStorage.getItem('ic_shortmap') || '{}');
+  Object.assign(shortMap, saved);
+  Object.entries(saved).forEach(([orig, code]) => { shortMapRev[code] = orig; });
+} catch(e) {}
 
-// ═══════════════════════════════════
-// SPECIAL MODES (sitemap/feed served
-// directly from this HTML file)
-// ═══════════════════════════════════
-(function handleModes(){
-  const p = new URLSearchParams(location.search);
-  const stored = localStorage.getItem('ic_urls') || '';
-  const urlList = stored.split('\n').filter(u => u.trim().startsWith('http')).map(u => u.trim());
+// Also pull from Supabase in background
+loadFromSupabase();
 
-  if(p.get('sitemap') === 'xml'){
-    const now = new Date().toISOString();
-    // Use short URLs in sitemap — Google fetches them, gets 301, follows to target
-    const items = urlList.map(u => {
-      const code = (() => { try { const m = JSON.parse(localStorage.getItem('ic_shortmap')||'{}'); return m[u]; } catch(e){ return null; } })();
-      const loc = code ? `https://indexernow.vercel.app/link/${code}` : u;
-      return `  <url>\n    <loc>${xe(loc)}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>always</changefreq>\n    <priority>1.0</priority>\n  </url>`;
-    }).join('\n');
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items}\n</urlset>`;
-    document.open();
-    document.write(`<pre style="font:12px monospace;color:#0f0;background:#000;padding:20px;">${xml.replace(/</g,'&lt;')}</pre>`);
-    document.close();
-    return;
-  }
-
-  if(p.get('feed') === 'rss'){
-    const pageUrl = location.href.split('?')[0];
-    const nowStr = new Date().toUTCString();
-    const items = urlList.slice(0,50).map(u =>
-      `\n  <item>\n    <title>${xe(u.replace(/^https?:\/\//,''))}</title>\n    <link>${xe(u)}</link>\n    <guid isPermaLink="true">${xe(u)}</guid>\n    <pubDate>${nowStr}</pubDate>\n  </item>`
-    ).join('');
-    const rss = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n  <channel>\n    <title>IndexCore</title>\n    <link>${xe(pageUrl)}</link>\n    <lastBuildDate>${nowStr}</lastBuildDate>${items}\n  </channel>\n</rss>`;
-    document.open();
-    document.write(`<pre style="font:12px monospace;color:#0f0;background:#000;padding:20px;">${rss.replace(/</g,'&lt;')}</pre>`);
-    document.close();
-    return;
-  }
-})();
-
-function xe(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function he(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-// ── Short code generator ──────────────────────────────
-// Generates a 5-char lowercase code e.g. "sugus". Collision-safe.
-function genShortCode(){
+// ── Code generator: 5 random lowercase letters ──────────
+function genCode() {
   const chars = 'abcdefghijklmnopqrstuvwxyz';
-  let code, attempts = 0;
+  let code, tries = 0;
   do {
-    code = Array.from({length:5}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
-    attempts++;
-  } while(shortMapRev[code] && attempts < 100);
+    code = Array.from({length: 5}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    tries++;
+  } while (shortMapRev[code] && tries < 200);
   return code;
 }
 
-// Ensure every URL has a short code. Synchronous assignment so
-// the grid renders with codes immediately — no async race.
-function ensureShortCodes(urlList){
+// ── Parse textarea ──────────────────────────────────────
+function parseUrls() {
+  return (document.getElementById('url-input').value || '')
+    .split('\n')
+    .map(u => u.trim())
+    .filter(u => u.startsWith('http://') || u.startsWith('https://'));
+}
+
+// ── Main: runs on every keystroke ──────────────────────
+function onInput() {
+  const urls = parseUrls();
+
+  // Assign codes synchronously
   let newCodes = false;
-  for(const url of urlList){
-    if(!shortMap[url]){
-      const code = genShortCode();
+  for (const url of urls) {
+    if (!shortMap[url]) {
+      const code = genCode();
       shortMap[url]    = code;
       shortMapRev[code] = url;
       newCodes = true;
     }
   }
-  if(newCodes){
-    // Write to localStorage instantly so grid renders with codes right away
-    try { localStorage.setItem('ic_shortmap', JSON.stringify(shortMap)); } catch(e){}
-    sbSaveShortLinks(); // persist to Supabase in background
+
+  // Persist immediately
+  if (newCodes) {
+    try { localStorage.setItem('ic_shortmap', JSON.stringify(shortMap)); } catch(e) {}
+    saveToSupabase(); // background
   }
+
+  render(urls);
 }
 
-function shortUrlFor(url){ return SHORT_BASE + (shortMap[url] || genShortCode()); }
+// ── Render results list ─────────────────────────────────
+function render(urls) {
+  const empty      = document.getElementById('empty-state');
+  const header     = document.getElementById('results-header');
+  const list       = document.getElementById('link-list');
+  const countEl    = document.getElementById('url-count');
+  const titleEl    = document.getElementById('results-title');
 
-// ═══════════════════════════════════
-// INIT
-// ═══════════════════════════════════
-window.addEventListener('load', () => {
-  // Restore fields
-  const fields = {
-    'url-input': 'ic_urls',
-    'gsc-token': 'ic_gsc_token',
-    'gsc-site-oauth': 'ic_gsc_site_oauth',
-    'sa-json': 'ic_sa_json',
-    'gsc-site-sa': 'ic_gsc_site_sa'
-  };
-  for(const [id, key] of Object.entries(fields)){
-    const v = localStorage.getItem(key);
-    const el = document.getElementById(id);
-    if(v && el) el.value = v;
+  countEl.textContent = `${urls.length} URL${urls.length !== 1 ? 's' : ''}`;
+
+  if (!urls.length) {
+    empty.style.display  = '';
+    header.style.display = 'none';
+    list.innerHTML       = '';
+    return;
   }
-  const savedMode = localStorage.getItem('ic_gsc_mode') || 'sa';
-  switchGscMode(savedMode, document.getElementById(`tab-${savedMode}`));
 
-  const savedInterval = localStorage.getItem('ic_interval');
-  if(savedInterval) document.getElementById('check-interval').value = savedInterval;
+  empty.style.display  = 'none';
+  header.style.display = 'flex';
+  titleEl.textContent  = `${urls.length} Short Link${urls.length !== 1 ? 's' : ''}`;
 
-  const savedGscPer = localStorage.getItem('ic_gscper');
-  if(savedGscPer) document.getElementById('gsc-per-cycle').value = savedGscPer;
-
-  // Load shortmap FIRST so codes exist when grid renders
-  try {
-    const saved = JSON.parse(localStorage.getItem('ic_shortmap') || '{}');
-    Object.assign(shortMap, saved);
-    Object.entries(saved).forEach(([orig, code]) => { shortMapRev[code] = orig; });
-  } catch(e){}
-
-  onUrlChange();
-  onGscChange();
-  buildCrawlSurface();
-
-  log('system', 'IndexCore loaded — 5-step real indexing engine ready');
-  log('system', 'Step ①: Add URLs  →  ②③: Pings fire  →  ④⑤: GSC tracks indexing status');
-});
-
-function saveSetting(key, val){ try { localStorage.setItem(key, val); } catch(e){} sbSaveSetting(key, val); }
-
-// ═══════════════════════════════════
-// URL MANAGEMENT
-// ═══════════════════════════════════
-function parseURLs(){
-  return (document.getElementById('url-input').value || '')
-    .split('\n').map(u => u.trim()).filter(u => u.startsWith('http://') || u.startsWith('https://'));
+  list.innerHTML = urls.map(url => {
+    const code     = shortMap[url];
+    const shortUrl = code ? SHORT_BASE + code : SHORT_BASE + '…';
+    const origDisp = url.replace(/^https?:\/\//, '').slice(0, 65);
+    return `
+    <div class="link-row">
+      <div class="row-top">
+        <a class="short-url" href="${he(shortUrl)}" target="_blank" title="${he(shortUrl)}">${he(shortUrl)}</a>
+        <button class="btn-copy" onclick="copyOne(this, '${he(shortUrl)}')">COPY</button>
+      </div>
+      <div class="row-bottom">
+        <span class="arrow-label">301 ↗</span>
+        <a class="orig-url" href="${he(url)}" target="_blank" title="${he(url)}">${he(origDisp)}${url.length > 65 ? '…' : ''}</a>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function onUrlChange(){
-  urls = parseURLs();
-  ensureShortCodes(urls);
-  localStorage.setItem('ic_urls', document.getElementById('url-input').value);
-  sbSaveSetting('ic_urls', document.getElementById('url-input').value);
-  const n = urls.length;
-  document.getElementById('url-badge').textContent = `${n} URLs`;
-  document.getElementById('hdr-urls').textContent = n;
-  buildCrawlSurface();
-  updateJsonLD();
-  updateSitemapLink();
-  sbSaveUrls();
+// ── Copy one short link ─────────────────────────────────
+function copyOne(btn, url) {
+  navigator.clipboard?.writeText(url).then(() => {
+    btn.textContent = '✓ COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1800);
+  });
 }
 
-function sortUrls(){
-  const el = document.getElementById('url-input');
-  const sorted = parseURLs().sort();
-  el.value = sorted.join('\n');
-  onUrlChange();
+// ── Copy all short links ────────────────────────────────
+function copyAll() {
+  const urls  = parseUrls();
+  const lines = urls.map(u => shortMap[u] ? SHORT_BASE + shortMap[u] : u).join('\n');
+  navigator.clipboard?.writeText(lines).then(() => toast(`⎘ ${urls.length} short links copied!`));
 }
 
-function dedupUrls(){
-  const el = document.getElementById('url-input');
-  const deduped = [...new Set(parseURLs())];
-  el.value = deduped.join('\n');
-  onUrlChange();
-  toast(`✦ Deduped — ${deduped.length} unique URLs`, 'info');
-}
-
-function clearUrls(){
+// ── Clear ───────────────────────────────────────────────
+function clearAll() {
   document.getElementById('url-input').value = '';
-  onUrlChange();
+  onInput();
 }
 
-function onGscChange(){
-  const hasOauth = document.getElementById('gsc-token').value.trim() && document.getElementById('gsc-site-oauth').value.trim();
-  const hasSA = document.getElementById('sa-json').value.trim() && document.getElementById('gsc-site-sa').value.trim();
-  const hasAny = gscMode === 'oauth' ? hasOauth : hasSA;
-  const badge = document.getElementById('gsc-badge');
-  badge.textContent = hasAny ? 'CONNECTED' : 'NOT SET';
-  badge.className = 'badge ' + (hasAny ? 'badge-green' : 'badge-orange');
-
-  // Persist
-  saveSetting('ic_gsc_token', document.getElementById('gsc-token').value.trim());
-  saveSetting('ic_gsc_site_oauth', document.getElementById('gsc-site-oauth').value.trim());
-  saveSetting('ic_sa_json', document.getElementById('sa-json').value.trim());
-  saveSetting('ic_gsc_site_sa', document.getElementById('gsc-site-sa').value.trim());
+// ── Toast ───────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// ═══════════════════════════════════
-// LAUNCH / STOP
-// ═══════════════════════════════════
-async function launchEngine(){
-  urls = parseURLs();
-  if(!urls.length){ toast('⚠️ Add at least one URL first', 'warn'); return; }
-
-  isRunning = true;
-  document.getElementById('launch-btn').disabled = true;
-  document.getElementById('launch-btn').textContent = '⚡ RUNNING...';
-  document.getElementById('hdr-status').textContent = 'ACTIVE';
-
-  log('system', `🚀 Engine launched — ${urls.length} URLs in surface`);
-
-  // Step 2+3: Build crawl surface + fire pings
-  buildCrawlSurface();
-  await firePings();
-
-  // Step 4+5: GSC status check
-  await runGscCheck();
-
-  // Schedule recurring cycles
-  schedCycles();
-
-  toast('⚡ Engine live! Pings fired, GSC status checking started.', 'success');
+// ── HTML escape ─────────────────────────────────────────
+function he(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-function stopEngine(){
-  isRunning = false;
-  clearInterval(cycleTimer); clearInterval(cdTimer);
-  totalPings = 0;
-  document.getElementById('launch-btn').disabled = false;
-  document.getElementById('launch-btn').textContent = '⚡ LAUNCH ENGINE';
-  document.getElementById('hdr-status').textContent = 'STOPPED';
-  document.getElementById('countdown').textContent = '--:--';
-  ['websub','google','bing','rpc'].forEach(e => setEng(e,'idle'));
-  log('system', '⏹ Engine stopped');
-  toast('Engine stopped', 'warn');
-}
-
-function schedCycles(){
-  const interval = parseInt(document.getElementById('check-interval').value) * 1000;
-  startCountdown(interval / 1000);
-  cycleTimer = setInterval(async () => {
-    if(!isRunning) return;
-    await firePings();
-    if(document.getElementById('auto-check').checked) await runGscCheck();
-    startCountdown(interval / 1000);
-  }, interval);
-}
-
-function startCountdown(secs){
-  clearInterval(cdTimer);
-  cdSecs = Math.round(secs);
-  updCD();
-  cdTimer = setInterval(() => { cdSecs = Math.max(0, cdSecs-1); updCD(); }, 1000);
-}
-
-function updCD(){
-  const el = document.getElementById('countdown');
-  if(el) el.textContent = `${String(Math.floor(cdSecs/60)).padStart(2,'0')}:${String(cdSecs%60).padStart(2,'0')}`;
-}
-
-// ═══════════════════════════════════
-// STEP 2: CRAWL SURFACE (Dofollow links)
-// This is the core indexing mechanism —
-// every URL added here as a dofollow link
-// on a live page that Googlebot can crawl.
-// ═══════════════════════════════════
-function buildCrawlSurface(){
-  const grid = document.getElementById('url-grid');
-  const countBadge = document.getElementById('surface-count');
-  const summary = document.getElementById('surface-summary');
-
-  if(!urls.length){
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">Paste URLs in the sidebar → they appear here as live dofollow links.<br><span style="font-size:0.58rem;opacity:0.5;">Googlebot follows these links and discovers your URLs.</span></div>`;
-    countBadge.textContent = '0 URLs live';
-    summary.style.display = 'none';
-
-    // Full index
-    document.getElementById('full-index').style.display = 'none';
-    return;
-  }
-
-  countBadge.textContent = `${urls.length} URLs live`;
-
-  grid.innerHTML = urls.map(url => {
-    const s = urlStatus[url];
-    const statusBadge = s
-      ? `<span class="url-status ${s.verdict}">${statusLabel(s.verdict)}</span>`
-      : `<span class="url-status unknown">NEW</span>`;
-    const code = shortMap[url];
-    const shortUrl = code ? SHORT_BASE + code : '';
-    const displayUrl  = shortUrl || url;
-    const displayText = displayUrl.replace(/^https?:\/\//, '').slice(0, 52);
-    const origText    = url.replace(/^https?:\/\//, '').slice(0, 58) + (url.length > 58 ? '…' : '');
-    return `<div class="url-cell" style="flex-direction:column;align-items:flex-start;gap:4px;padding:8px 12px;">
-      <div style="display:flex;align-items:center;gap:6px;width:100%;">
-        <span style="font-size:0.65rem;opacity:0.4;">🔗</span>
-        <a href="${he(displayUrl)}" target="_blank" rel="dofollow noopener"
-           title="301 → ${he(url)}" style="flex:1;color:var(--accent);font-weight:600;">${he(displayText)}</a>
-        ${statusBadge}
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;width:100%;padding-left:18px;">
-        <span style="font-size:0.5rem;color:var(--muted2);text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;">301 ↗</span>
-        <span style="font-size:0.58rem;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;" title="${he(url)}">${he(origText)}</span>
-        ${shortUrl ? `<button onclick="navigator.clipboard?.writeText('${he(shortUrl)}').then(()=>toast('📋 Copied!','success'))"
-          style="font-size:0.5rem;padding:2px 7px;border-radius:3px;border:1px solid rgba(22,163,74,0.3);
-                 background:var(--accent-dim);color:var(--accent);cursor:pointer;white-space:nowrap;flex-shrink:0;">COPY</button>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-
-  // Summary bar
-  const counts = { indexed:0, crawled:0, pending:0, error:0, unknown:0 };
-  urls.forEach(u => {
-    const v = urlStatus[u]?.verdict || 'unknown';
-    counts[v] = (counts[v]||0) + 1;
-  });
-
-  summary.style.display = 'flex';
-  summary.innerHTML = `
-    <span class="sum-chip g">✅ ${counts.indexed} Indexed</span>
-    <span class="sum-chip b">🔷 ${counts.crawled} Crawled</span>
-    <span class="sum-chip o">⏳ ${counts.pending} Pending</span>
-    <span class="sum-chip r">❌ ${counts.error} Errors</span>
-    <span style="margin-left:auto;font-size:0.58rem;color:var(--muted2);">${urls.length} total URLs</span>
-  `;
-
-  // Full hidden index (for crawlers) — short URLs are the primary crawl targets
-  const allLinks = document.getElementById('all-links');
-  const fullIdx = document.getElementById('full-index');
-  fullIdx.style.display = 'block';
-  allLinks.innerHTML = urls.map(u => {
-    const code = shortMap[u];
-    const shortUrl = code ? SHORT_BASE + code : u;
-    return `<a href="${he(shortUrl)}" rel="dofollow" title="${he(u)}" style="display:block;color:rgba(22,163,74,0.5);font-family:var(--font-mono);font-size:0.58rem;padding:1px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;break-inside:avoid;">${he(shortUrl.replace(/^https?:\/\//,''))}</a>`;
-  }).join('');
-}
-
-function statusLabel(v){
-  return { indexed:'INDEXED', crawled:'CRAWLED', pending:'PENDING', error:'ERROR', unknown:'NEW' }[v] || 'NEW';
-}
-
-function updateSitemapLink(){
-  const el = document.getElementById('sitemap-link');
-  if(el) el.href = `${location.href.split('?')[0]}?sitemap=xml&t=${Date.now()}`;
-}
-
-function copyAllUrls(){
-  navigator.clipboard?.writeText(urls.join('\n')).then(() => toast('📋 URLs copied!', 'success'));
-}
-
-// ═══════════════════════════════════
-// STEP 3: PING ENGINES
-// ═══════════════════════════════════
-async function firePings(){
-  log('ping', `📡 Firing ping cascade — ${urls.length} URLs in sitemap`);
-  const sitemapUrl = encodeURIComponent(`${location.href.split('?')[0]}?sitemap=xml`);
-  const feedUrl = `${location.href.split('?')[0]}?feed=rss`;
-
-  // Engine 1: WebSub / PubSubHubbub
-  setEng('websub','firing');
-  const hubs = [
-    'https://pubsubhubbub.appspot.com/',
-    'https://hub.feedburner.com',
-    'https://pubsubhubbub.superfeedr.com/'
-  ];
-  let websubOk = 0;
-  for(const hub of hubs){
-    try {
-      const body = new URLSearchParams();
-      body.append('hub.mode','publish');
-      body.append('hub.url', feedUrl);
-      await fetch(hub, { method:'POST', body, mode:'no-cors' });
-      websubOk++;
-    } catch(e){}
-  }
-  log('ping', `📡 WebSub: pushed to ${websubOk}/${hubs.length} hubs`);
-  setEng('websub', 'done');
-  addPings(websubOk);
-  await sleep(300);
-
-  // Engine 2: Google Sitemap Ping
-  setEng('google','firing');
+// ── Supabase: save shortmap ─────────────────────────────
+async function saveToSupabase() {
   try {
-    await fetch(`https://www.google.com/ping?sitemap=${sitemapUrl}`, {mode:'no-cors'});
-    await fetch(`https://www.google.com/webmasters/sitemaps/ping?sitemap=${sitemapUrl}`, {mode:'no-cors'});
-    log('ping', `🌐 Google sitemap ping sent — ${urls.length} URLs`);
-    setEng('google','done');
-    addPings(2);
-  } catch(e){
-    log('error', `🌐 Google ping failed: ${e.message}`);
-    setEng('google','error');
-  }
-  await sleep(300);
-
-  // Engine 3: Bing Sitemap Ping
-  setEng('bing','firing');
-  try {
-    await fetch(`https://www.bing.com/ping?sitemap=${sitemapUrl}`, {mode:'no-cors'});
-    log('ping', `🔷 Bing sitemap ping sent`);
-    setEng('bing','done');
-    addPings(1);
-  } catch(e){
-    log('error', `🔷 Bing ping failed: ${e.message}`);
-    setEng('bing','error');
-  }
-  await sleep(300);
-
-  // Engine 4: XML-RPC Blog Pings
-  setEng('rpc','firing');
-  const pageUrl = location.href.split('?')[0];
-  const xmlBody = `<?xml version="1.0"?><methodCall><methodName>weblogUpdates.ping</methodName><params><param><value>IndexCore</value></param><param><value>${pageUrl}</value></param></params></methodCall>`;
-  const endpoints = [
-    'https://rpc.pingomatic.com/',
-    'https://ping.blogs.yandex.ru/RPC2',
-    'http://blogsearch.google.com/ping/RPC2',
-  ];
-  let rpcOk = 0;
-  for(const ep of endpoints){
-    try {
-      await fetch(ep, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/xml'}, body: xmlBody});
-      rpcOk++;
-    } catch(e){}
-  }
-  log('ping', `🏓 XML-RPC: sent to ${rpcOk}/${endpoints.length} endpoints`);
-  setEng('rpc','done');
-  addPings(rpcOk);
-
-  // Update sitemap link element
-  updateSitemapLink();
-  log('ping', `✅ Ping cascade complete — ${totalPings} total pings fired`);
-}
-
-async function firePingsNow(){
-  urls = parseURLs();
-  if(!urls.length){ toast('⚠️ Add URLs first', 'warn'); return; }
-  await firePings();
-  toast('📡 Pings fired!', 'success');
-}
-
-// ═══════════════════════════════════
-// STEP 4: GSC STATUS CHECK
-// Read-only: we inspect what Google knows
-// about each URL — no fake "request indexing"
-// ═══════════════════════════════════
-async function getGscConfig(){
-  if(gscMode === 'sa'){
-    const jsonRaw = document.getElementById('sa-json').value.trim();
-    const site = document.getElementById('gsc-site-sa').value.trim();
-    if(!jsonRaw || !site) return null;
-    let saJson;
-    try { saJson = JSON.parse(jsonRaw); } catch(e){ throw new Error('SA JSON invalid'); }
-    const token = await getSAToken(saJson);
-    return { token, siteUrl: site };
-  }
-  const token = document.getElementById('gsc-token').value.trim();
-  const siteUrl = document.getElementById('gsc-site-oauth').value.trim();
-  if(!token || !siteUrl) return null;
-  return { token, siteUrl };
-}
-
-// Track which URLs have had Request Indexing fired this session
-const requestedIndexing = new Set();
-
-async function runGscCheck(){
-  // ── Always prefer Service Account — never needs refresh ──
-  let cfg;
-  try { cfg = await getGscConfig(); } catch(e){
-    log('error', `GSC auth: ${e.message}`);
-    return;
-  }
-  if(!cfg){
-    log('gsc', '🔍 GSC: no credentials — add Service Account JSON + property URL in sidebar.');
-    return;
-  }
-
-  document.getElementById('report-card').style.display = '';
-
-  const maxPer = parseInt(document.getElementById('gsc-per-cycle').value);
-  const toCheck = urls
-    .filter(u => {
-      if(!document.getElementById('auto-check').checked) return !urlStatus[u];
-      const v = urlStatus[u]?.verdict;
-      // Skip confirmed indexed & hard errors, re-check everything else
-      return !v || v === 'pending' || v === 'unknown' || v === 'crawled';
-    })
-    .slice(0, maxPer);
-
-  if(!toCheck.length){
-    log('gsc', '🔍 GSC: all URLs indexed or no pending URLs — nothing to check');
-    return;
-  }
-
-  log('gsc', `🔍 GSC Inspect + Request Indexing: ${toCheck.length} URLs via ${gscMode.toUpperCase()} (permanent token)`);
-
-  const { token, siteUrl } = cfg;
-  // Use indexernow.vercel.app as the GSC property since short URLs live there
-  const normSite = 'https://indexernow.vercel.app/';
-
-  let cntSubmitted = 0, cntAlready = 0, cntFailed = 0;
-
-  for(const url of toCheck){
-    // Use the short URL for GSC — Google fetches it, sees 301, indexes the chain
-    const code = shortMap[url];
-    const inspectUrl = code ? SHORT_BASE + code : url;
-    try {
-
-      // ══ STEP 1: Inspect current index status ══════════════
-      const inspResp = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inspectionUrl: inspectUrl, siteUrl: normSite })
-      });
-
-      if(inspResp.status === 401){
-        log('error', '🔍 GSC 401: token issue. If using Service Account, re-check your JSON key.');
-        toast('GSC auth error — check Service Account JSON key', 'error');
-        return;
-      }
-      if(inspResp.status === 403){
-        const saEmail = gscMode === 'sa'
-          ? (()=>{ try{ return JSON.parse(document.getElementById('sa-json').value)?.client_email || 'SA email'; }catch(e){ return 'SA email'; } })()
-          : 'account';
-        log('error', `🔍 GSC 403: Add ${saEmail} to GSC → Settings → Users & Permissions → Full access`);
-        toast('GSC 403 — add Service Account email to GSC users', 'error');
-        return;
-      }
-      if(inspResp.status === 429){
-        log('error', '🔍 GSC 429: 200/day quota reached. Resuming next cycle (resets midnight UTC).');
-        break;
-      }
-
-      if(!inspResp.ok){
-        let msg = '';
-        try { const j = await inspResp.json(); msg = j?.error?.message || ''; } catch(e){}
-        log('error', `🔍 GSC HTTP ${inspResp.status}: ${msg.slice(0,80)}`);
-        urlStatus[url] = { verdict: 'error', coverage: `HTTP ${inspResp.status}`, lastCheck: new Date().toLocaleTimeString() };
-        addReportRow(url, 'error', `HTTP ${inspResp.status} — ${msg.slice(0,60)}`);
-        cntFailed++;
-        await sleep(400);
-        continue;
-      }
-
-      const inspData = await inspResp.json();
-      const isr = inspData?.inspectionResult?.indexStatusResult;
-      const verdict_raw   = isr?.verdict       || 'UNKNOWN';
-      const coverage      = isr?.coverageState  || '';
-      const lastCrawl     = isr?.lastCrawlTime  ? new Date(isr.lastCrawlTime).toLocaleDateString() : '';
-      const robotsBlocked = isr?.robotsTxtState === 'BLOCKED';
-      const noindex       = isr?.indexingState  === 'INDEXING_NOT_ALLOWED';
-
-      // Hard-stop conditions — don't waste Request Indexing quota
-      if(robotsBlocked){
-        urlStatus[url] = { verdict:'error', coverage:'🚨 Blocked by robots.txt', lastCrawl, lastCheck: new Date().toLocaleTimeString() };
-        addReportRow(url, 'error', '🚨 Blocked by robots.txt — fix before requesting indexing');
-        log('error', `🔍 GSC 🚨 robots.txt BLOCKING: ${url.slice(0,55)}`);
-        cntFailed++;
-        await sleep(400);
-        continue;
-      }
-      if(noindex){
-        urlStatus[url] = { verdict:'error', coverage:'🚫 noindex tag detected', lastCrawl, lastCheck: new Date().toLocaleTimeString() };
-        addReportRow(url, 'error', '🚫 noindex directive — remove it to allow indexing');
-        log('error', `🔍 GSC 🚫 noindex: ${url.slice(0,55)}`);
-        cntFailed++;
-        await sleep(400);
-        continue;
-      }
-
-      // Already fully indexed — record it, skip Request Indexing call
-      if(verdict_raw === 'PASS'){
-        const prevVerdict = urlStatus[url]?.verdict;
-        urlStatus[url] = { verdict:'indexed', coverage: coverage || 'Submitted and indexed', lastCrawl, lastCheck: new Date().toLocaleTimeString() };
-        sbUpdateUrlStatus(url);
-        addReportRow(url, 'indexed', `✓ Already indexed (${coverage || 'Submitted and indexed'})`, lastCrawl);
-        if(prevVerdict !== 'indexed'){
-          if(document.getElementById('notify-indexed').checked)
-            toast(`✅ INDEXED: ${url.replace(/^https?:\/\//,'').slice(0,50)}`, 'success');
-          log('success', `✅ INDEXED: ${url.slice(0,70)}`);
-        } else {
-          log('gsc', `🔍 ✅ Already indexed: ${url.slice(0,55)}`);
-        }
-        requestedIndexing.add(url);
-        cntAlready++;
-        await sleep(400);
-        continue;
-      }
-
-      // ══ STEP 2: REQUEST INDEXING ══════════════════════════
-      // Equivalent to clicking "Request Indexing" inside GSC.
-      // Uses the same SA token — no OAuth, no 1-hour expiry.
-      const reqResp = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inspectionUrl:   inspectUrl,
-          siteUrl:         normSite,
-          requestIndexing: true        // ← THE "Request Indexing" button call
-        })
-      });
-
-      if(reqResp.status === 429){
-        log('error', '🔍 GSC 429: quota hit mid-batch. Remaining URLs queued for next cycle.');
-        break;
-      }
-
-      if(reqResp.ok){
-        let reqData = null;
-        try { reqData = await reqResp.json(); } catch(e){}
-        const reqVerdict  = reqData?.inspectionResult?.indexStatusResult?.verdict       || '';
-        const reqCoverage = reqData?.inspectionResult?.indexStatusResult?.coverageState || '';
-
-        let reason = '📬 Request Indexing sent — queued for Googlebot (~minutes)';
-        if(reqVerdict === 'PASS') reason = '✓ Confirmed indexed';
-        else if(reqCoverage)     reason = `Queued ✓ | ${reqCoverage}`;
-
-        const newVerdict = reqVerdict === 'PASS' ? 'indexed' : 'pending';
-        urlStatus[url] = { verdict: newVerdict, coverage: reason, lastCrawl, lastCheck: new Date().toLocaleTimeString() };
-        sbUpdateUrlStatus(url);
-        addReportRow(url, newVerdict, reason, lastCrawl);
-        log('gsc', `🔍 ✅ Request Indexing sent: ${url.slice(0,55)}`);
-        requestedIndexing.add(url);
-        cntSubmitted++;
-
-        if(newVerdict === 'indexed' && document.getElementById('notify-indexed').checked)
-          toast(`✅ INDEXED: ${url.replace(/^https?:\/\//,'').slice(0,50)}`, 'success');
-
-      } else {
-        let errMsg = '';
-        try { const j = await reqResp.json(); errMsg = j?.error?.message || ''; } catch(e){}
-        const display = `HTTP ${reqResp.status}${errMsg ? ' — ' + errMsg.slice(0,60) : ''}`;
-        urlStatus[url] = { verdict:'error', coverage: display, lastCrawl, lastCheck: new Date().toLocaleTimeString() };
-        addReportRow(url, 'error', display);
-        log('error', `🔍 GSC Request Indexing failed: ${url.slice(0,50)} — ${display}`);
-        cntFailed++;
-      }
-
-    } catch(err){
-      log('error', `🔍 GSC network error: ${url.slice(0,50)} — ${err.message}`);
-      urlStatus[url] = { verdict:'error', coverage: err.message, lastCheck: new Date().toLocaleTimeString() };
-      addReportRow(url, 'error', err.message.slice(0, 80));
-      cntFailed++;
-    }
-
-    await sleep(400); // Respect GSC rate limits
-  }
-
-  updateStats();
-  buildCrawlSurface();
-  log('gsc', `🔍 GSC cycle done — ${cntSubmitted} queued | ${cntAlready} already indexed | ${cntFailed} failed`);
-}
-
-async function runGscCheckNow(){
-  urls = parseURLs();
-  if(!urls.length){ toast('⚠️ Add URLs first', 'warn'); return; }
-  await runGscCheck();
-  toast('🔍 GSC status check complete', 'info');
-}
-
-// ═══════════════════════════════════
-// STEP 5: REPORT
-// ═══════════════════════════════════
-function addReportRow(url, verdict, coverage, lastCrawl){
-  const body = document.getElementById('report-body');
-  if(!body) return;
-
-  // Remove empty state if present
-  const empty = body.querySelector('.empty-state');
-  if(empty) empty.remove();
-
-  const time = new Date().toLocaleTimeString();
-  const short = url.replace(/^https?:\/\//, '').slice(0, 55) + (url.length > 55 ? '…' : '');
-
-  const row = document.createElement('div');
-  row.className = `report-row ${verdict}`;
-  row.innerHTML = `
-    <span class="rr-time">${he(time)}</span>
-    <span class="rr-verdict ${verdict}">${verdict.toUpperCase()}</span>
-    <span class="rr-coverage">${he(coverage || '')}</span>
-    <span class="rr-url"><a href="${he(url)}" target="_blank" rel="noopener">${he(short)}</a></span>
-    <span class="rr-action">${lastCrawl ? '🕷️ ' + he(lastCrawl) : ''}</span>
-  `;
-  body.prepend(row);
-  while(body.children.length > 500) body.removeChild(body.lastChild);
-
-  reportEntries.unshift({ time, url, verdict, coverage, lastCrawl: lastCrawl || '' });
-  sbSaveReport({ url, verdict, coverage, lastCrawl: lastCrawl||'' });
-  if(reportEntries.length > 1000) reportEntries.pop();
-
-  // Update report counters
-  const cnts = { indexed:0, crawled:0, pending:0, error:0 };
-  reportEntries.forEach(e => { if(cnts[e.verdict] !== undefined) cnts[e.verdict]++; });
-  document.getElementById('rep-indexed').textContent = cnts.indexed;
-  document.getElementById('rep-crawled').textContent = cnts.crawled;
-  document.getElementById('rep-pending').textContent = cnts.pending;
-  document.getElementById('rep-error').textContent = cnts.error;
-}
-
-function clearReport(){
-  const b = document.getElementById('report-body');
-  if(b) b.innerHTML = '<div class="empty-state">No GSC checks run yet.</div>';
-  reportEntries = [];
-  sbClearReport();
-  ['indexed','crawled','pending','error'].forEach(k => document.getElementById(`rep-${k}`).textContent = '0');
-}
-
-// ═══════════════════════════════════
-// STATS
-// ═══════════════════════════════════
-function updateStats(){
-  const counts = { indexed:0, crawled:0, pending:0, error:0 };
-  urls.forEach(u => {
-    const v = urlStatus[u]?.verdict || 'pending';
-    if(counts[v] !== undefined) counts[v]++;
-    else counts.pending++;
-  });
-
-  const total = urls.length || 1;
-  setStat('stat-indexed', counts.indexed);
-  setStat('stat-crawled', counts.crawled);
-  setStat('stat-pending', counts.pending);
-  document.getElementById('hdr-indexed').textContent = counts.indexed;
-
-  setProgress('indexed', (counts.indexed / total) * 100);
-  setProgress('crawled', (counts.crawled / total) * 100);
-  setProgress('pending', (counts.pending / total) * 100);
-}
-
-function setStat(id, val){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.textContent = val;
-  const box = el.closest('.stat-box');
-  if(box){ box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop'); }
-}
-
-function setProgress(type, pct){
-  const fill = document.getElementById(`pf-${type}`);
-  const val = document.getElementById(`pv-${type}`);
-  const r = Math.min(100, Math.round(pct));
-  if(fill) fill.style.width = `${r}%`;
-  if(val) val.textContent = `${r}%`;
-}
-
-function addPings(n){
-  totalPings += (n||0);
-  setStat('stat-pings', totalPings);
-}
-
-// ═══════════════════════════════════
-// ENGINE UI HELPERS
-// ═══════════════════════════════════
-function setEng(id, state){
-  const row = document.getElementById(`eng-${id}`);
-  const badge = document.getElementById(`eng-${id}-s`);
-  if(!row || !badge) return;
-  row.className = 'ping-row ' + (state === 'firing' ? 'firing' : state === 'done' ? 'done' : state === 'error' ? 'error' : '');
-  badge.className = `ping-badge ${state}`;
-  badge.textContent = { idle:'IDLE', firing:'FIRING', done:'DONE', error:'ERROR', skip:'SKIP' }[state] || state.toUpperCase();
-}
-
-// ═══════════════════════════════════
-// SERVICE ACCOUNT JWT ENGINE
-// ═══════════════════════════════════
-async function getSAToken(saJson){
-  const email = saJson.client_email;
-  const now = Math.floor(Date.now()/1000);
-  if(saTokenCache[email] && saTokenCache[email].expires > now + 300) return saTokenCache[email].token;
-
-  const header = { alg:'RS256', typ:'JWT' };
-  const payload = {
-    iss: email,
-    scope: 'https://www.googleapis.com/auth/webmasters',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600,
-    iat: now
-  };
-
-  const b64url = s => btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-  const enc = new TextEncoder();
-  const hB64 = b64url(JSON.stringify(header));
-  const pB64 = b64url(JSON.stringify(payload));
-  const sigInput = `${hB64}.${pB64}`;
-
-  const pemKey = saJson.private_key;
-  const keyData = pemKey.replace(/-----BEGIN (RSA )?PRIVATE KEY-----/,'').replace(/-----END (RSA )?PRIVATE KEY-----/,'').replace(/\n/g,'').trim();
-
-  let cryptoKey;
-  try {
-    const binaryKey = Uint8Array.from(atob(keyData), c => c.charCodeAt(0));
-    cryptoKey = await crypto.subtle.importKey('pkcs8', binaryKey.buffer, { name:'RSASSA-PKCS1-v1_5', hash:'SHA-256' }, false, ['sign']);
-  } catch(e){
-    throw new Error(`SA key import failed: ${e.message}`);
-  }
-
-  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, enc.encode(sigInput));
-  const sigB64 = b64url(String.fromCharCode(...new Uint8Array(sig)));
-  const jwt = `${sigInput}.${sigB64}`;
-
-  const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body: new URLSearchParams({ grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt })
-  });
-
-  if(!tokenResp.ok){
-    const err = await tokenResp.text();
-    throw new Error(`SA token exchange failed (${tokenResp.status}): ${err.slice(0,100)}`);
-  }
-
-  const td = await tokenResp.json();
-  saTokenCache[email] = { token: td.access_token, expires: now + (td.expires_in || 3600) };
-  return td.access_token;
-}
-
-async function testSA(){
-  const statusEl = document.getElementById('sa-status');
-  statusEl.style.display = 'block';
-  statusEl.style.color = 'var(--muted)';
-  statusEl.textContent = '⏳ Testing connection...';
-  try {
-    const cfg = await getGscConfig();
-    if(!cfg){ statusEl.textContent = '⚠️ Fill in JSON key and property URL'; return; }
-    const testUrl = cfg.siteUrl.endsWith('/') ? cfg.siteUrl : cfg.siteUrl + '/';
-    const resp = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
-      method:'POST',
-      headers:{'Authorization':`Bearer ${cfg.token}`,'Content-Type':'application/json'},
-      body: JSON.stringify({ inspectionUrl: testUrl, siteUrl: testUrl })
-    });
-    if(resp.ok){
-      statusEl.style.color = 'var(--accent)';
-      statusEl.textContent = `✅ Connected! Property: ${cfg.siteUrl}`;
-      toast('✅ SA connected!', 'success');
-    } else if(resp.status === 403){
-      statusEl.style.color = 'var(--danger)';
-      const email = JSON.parse(document.getElementById('sa-json').value)?.client_email || '?';
-      statusEl.textContent = `❌ 403 — add ${email} to GSC → Settings → Users with Full access`;
-    } else {
-      statusEl.style.color = 'var(--danger)';
-      statusEl.textContent = `❌ HTTP ${resp.status}`;
-    }
-  } catch(e){
-    statusEl.style.color = 'var(--danger)';
-    statusEl.textContent = `❌ ${e.message}`;
-  }
-}
-
-// ═══════════════════════════════════
-// GSC MODE SWITCHER
-// ═══════════════════════════════════
-function switchGscMode(mode, btn){
-  gscMode = mode;
-  ['oauth','sa'].forEach(m => {
-    const t = document.getElementById(`tab-${m}`);
-    const p = document.getElementById(`gsc-panel-${m}`);
-    if(t) t.classList.toggle('active', m === mode);
-    if(p) p.classList.toggle('active', m === mode);
-  });
-  saveSetting('ic_gsc_mode', mode);
-  onGscChange();
-}
-
-// ═══════════════════════════════════
-// JSON-LD UPDATER
-// ═══════════════════════════════════
-function updateJsonLD(){
-  const el = document.getElementById('jsonld-main');
-  if(!el) return;
-  try {
-    const d = JSON.parse(el.textContent);
-    d.dateModified = new Date().toISOString();
-    d.mainEntity.numberOfItems = urls.length;
-    d.mainEntity.itemListElement = urls.slice(0,50).map((u,i) => ({
-      '@type':'ListItem', position: i+1, url: u, name: u.replace(/^https?:\/\//,'').split('/')[0]
-    }));
-    el.textContent = JSON.stringify(d);
-  } catch(e){}
-}
-
-// ═══════════════════════════════════
-// LOG
-// ═══════════════════════════════════
-function log(type, msg){
-  const body = document.getElementById('log-body');
-  if(!body) return;
-  const time = new Date().toLocaleTimeString();
-  logEntries.push({time, type, msg});
-  sbSaveLog({type, msg});
-  if(logEntries.length > 500) logEntries.shift();
-  const el = document.createElement('div');
-  el.className = 'log-row';
-  el.innerHTML = `<span class="log-time">${time}</span><span class="log-type ${type}">${type.toUpperCase()}</span><span class="log-msg">${he(msg)}</span>`;
-  body.prepend(el);
-  while(body.children.length > 200) body.removeChild(body.lastChild);
-}
-
-function clearLog(){
-  document.getElementById('log-body').innerHTML = '';
-  logEntries = [];
-  sbClearLog();
-  log('system', 'Log cleared');
-}
-
-// ═══════════════════════════════════
-// EXPORT FUNCTIONS
-// ═══════════════════════════════════
-function dl(name, content, type){
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content], {type}));
-  a.download = name;
-  a.click();
-}
-
-function exportSitemap(){
-  const now = new Date().toISOString();
-  const items = urls.map(u =>
-    `  <url>\n    <loc>${xe(u)}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>always</changefreq>\n    <priority>1.0</priority>\n  </url>`
-  ).join('\n');
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items}\n</urlset>`;
-  dl('sitemap.xml', xml, 'application/xml');
-  toast('🗺️ Sitemap exported!', 'success');
-}
-
-function exportReport(){
-  const lines = ['TIME\tVERDICT\tCOVERAGE\tLAST_CRAWL\tURL'];
-  reportEntries.forEach(e => lines.push(`${e.time}\t${e.verdict.toUpperCase()}\t${e.coverage}\t${e.lastCrawl}\t${e.url}`));
-  dl('indexcore-report.tsv', lines.join('\n'), 'text/tab-separated-values');
-  toast('📋 Report exported!', 'success');
-}
-
-function exportLog(){
-  dl('indexcore-log.txt', logEntries.map(e => `[${e.time}][${e.type.toUpperCase()}] ${e.msg}`).join('\n'), 'text/plain');
-  toast('📋 Log exported!', 'success');
-}
-
-// ═══════════════════════════════════
-// ═══════════════════════════════════
-// GOOGLEBOT VISIT LOG
-// Detects the User-Agent of every page
-// visitor and records it with timestamp.
-// Googlebot, Bingbot, and other crawlers
-// are highlighted. Data persists in
-// localStorage across sessions.
-// ═══════════════════════════════════
-
-const BOT_PATTERNS = [
-  { key: 'googlebot',      label: 'Googlebot',              icon: '🟢', ua: /googlebot/i },
-  { key: 'google-other',   label: 'Google-Other',           icon: '🟡', ua: /google(?!bot)/i },
-  { key: 'bingbot',        label: 'Bingbot',                icon: '🔷', ua: /bingbot/i },
-  { key: 'yandex',         label: 'YandexBot',              icon: '🔴', ua: /yandex/i },
-  { key: 'duckduck',       label: 'DuckDuckBot',            icon: '🦆', ua: /duckduck/i },
-  { key: 'baidu',          label: 'Baiduspider',            icon: '🐼', ua: /baiduspider/i },
-  { key: 'semrush',        label: 'SemrushBot',             icon: '🟠', ua: /semrush/i },
-  { key: 'ahrefs',         label: 'AhrefsBot',              icon: '🟠', ua: /ahrefs/i },
-  { key: 'mj12',           label: 'MJ12bot',                icon: '🤖', ua: /mj12bot/i },
-  { key: 'dotbot',         label: 'Dotbot',                 icon: '🤖', ua: /dotbot/i },
-  { key: 'petalbot',       label: 'PetalBot',               icon: '🌸', ua: /petalbot/i },
-  { key: 'bot-generic',    label: 'Bot/Crawler',            icon: '🤖', ua: /bot|crawler|spider|slurp|fetch|scrapy/i },
-];
-
-let botVisits = [];      // runtime array
-let botCounts = { googlebot: 0, other: 0, human: 0 };
-let agoTimers = [];      // setInterval handles for "X ago" updates
-
-function detectVisitor(){
-  const ua = navigator.userAgent || '';
-  const now = Date.now();
-  const ts  = new Date(now);
-
-  // Classify
-  let matched = null;
-  for(const p of BOT_PATTERNS){
-    if(p.ua.test(ua)){ matched = p; break; }
-  }
-
-  const isBot     = !!matched;
-  const isGoogle  = matched?.key === 'googlebot';
-  const isBing    = matched?.key === 'bingbot';
-
-  const entry = {
-    ts:       now,
-    ua:       ua.slice(0, 200),
-    label:    matched ? matched.label : 'Human Visitor',
-    icon:     matched ? matched.icon  : '👤',
-    cssClass: isGoogle ? 'googlebot' : isBing ? 'bingbot' : isBot ? 'other' : 'user',
-    isBot,
-    isGoogle
-  };
-
-  // Persist to localStorage (keep last 200)
-  try {
-    const saved = JSON.parse(localStorage.getItem('ic_botvisits') || '[]');
-    saved.unshift(entry);
-    if(saved.length > 200) saved.length = 200;
-    localStorage.setItem('ic_botvisits', JSON.stringify(saved));
-  } catch(e){}
-  // Persist to Supabase
-  sbSaveBotVisit(entry);
-
-  return entry;
-}
-
-function loadPersistedVisits(){
-  try {
-    return JSON.parse(localStorage.getItem('ic_botvisits') || '[]');
-  } catch(e){ return []; }
-}
-
-function timeAgo(ts){
-  const diff = Math.floor((Date.now() - ts) / 1000);
-  if(diff < 5)   return 'Just now';
-  if(diff < 60)  return `${diff}s ago`;
-  if(diff < 3600){
-    const m = Math.floor(diff/60);
-    return `${m} min${m>1?'s':''} ago`;
-  }
-  if(diff < 86400){
-    const h = Math.floor(diff/3600);
-    return `${h} hr${h>1?'s':''} ago`;
-  }
-  const d = Math.floor(diff/86400);
-  return `${d} day${d>1?'s':''} ago`;
-}
-
-function fmtExact(ts){
-  const d = new Date(ts);
-  const date = d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
-  const time = d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false });
-  return `${date} · ${time}`;
-}
-
-function renderBotLog(){
-  const body   = document.getElementById('botlog-body');
-  const empty  = document.getElementById('botlog-empty');
-  const agoEl  = document.getElementById('botlog-ago');
-  const exactEl= document.getElementById('botlog-exact');
-  const iconEl = document.getElementById('botlog-icon');
-
-  if(!body) return;
-
-  // Clear old "ago" timers
-  agoTimers.forEach(t => clearInterval(t));
-  agoTimers = [];
-
-  const visits = loadPersistedVisits();
-  if(!visits.length){
-    if(empty) empty.style.display = 'block';
-    return;
-  }
-  if(empty) empty.style.display = 'none';
-
-  // Recount from persisted data
-  botCounts = { googlebot: 0, other: 0, human: 0 };
-  visits.forEach(v => {
-    if(v.isGoogle)       botCounts.googlebot++;
-    else if(v.isBot)     botCounts.other++;
-    else                 botCounts.human++;
-  });
-
-  // Update stats
-  document.getElementById('bls-googlebot').textContent = botCounts.googlebot;
-  document.getElementById('bls-other').textContent = botCounts.other;
-  document.getElementById('bls-human').textContent = botCounts.human;
-
-  // Hero: last googlebot visit
-  const lastGbot = visits.find(v => v.isGoogle);
-  if(lastGbot){
-    iconEl.textContent = '🟢';
-    agoEl.textContent  = timeAgo(lastGbot.ts);
-    exactEl.textContent= fmtExact(lastGbot.ts);
-    // Live "ago" counter
-    const t = setInterval(() => {
-      if(agoEl) agoEl.textContent = timeAgo(lastGbot.ts);
-    }, 15000);
-    agoTimers.push(t);
-  } else {
-    iconEl.textContent = '⏳';
-    agoEl.innerHTML    = '<span class="spin">◌</span> Waiting for Googlebot...';
-    exactEl.textContent= 'No Googlebot visits recorded yet';
-  }
-
-  // Build rows (newest first)
-  body.innerHTML = visits.map((v, i) => {
-    const ago   = timeAgo(v.ts);
-    const exact = fmtExact(v.ts);
-    const isOld = (Date.now() - v.ts) > 3600000; // >1hr
-    const rowId = `bvr-${i}`;
-    return `<div class="botvisit-row ${v.cssClass}" id="${rowId}">
-      <span class="bv-icon">${v.icon}</span>
-      <div class="bv-info">
-        <div class="bv-bot ${v.cssClass}">${he(v.label)}</div>
-        <div class="bv-ua">${he(v.ua.slice(0,90))}</div>
-      </div>
-      <div class="bv-ago ${isOld?'old':''}" id="bva-${i}">${he(ago)}</div>
-      <div class="bv-exact">${he(exact)}</div>
-    </div>`;
-  }).join('');
-
-  // Live "ago" update for all rows
-  const agoUpdate = setInterval(() => {
-    visits.forEach((v, i) => {
-      const el = document.getElementById(`bva-${i}`);
-      if(el) el.textContent = timeAgo(v.ts);
-    });
-  }, 15000);
-  agoTimers.push(agoUpdate);
-}
-
-function recordAndRenderVisit(entry){
-  const body = document.getElementById('botlog-body');
-  if(!body) return;
-
-  const empty = document.getElementById('botlog-empty');
-  if(empty) empty.style.display = 'none';
-
-  renderBotLog();
-
-  // Flash alert on the card if it's Googlebot
-  if(entry.isGoogle){
-    const card = document.getElementById('botlog-card');
-    card.classList.remove('bot-alert');
-    void card.offsetWidth;
-    card.classList.add('bot-alert');
-    toast('🟢 Googlebot just visited this page!', 'success');
-    log('crawl', `🟢 GOOGLEBOT visited — ${fmtExact(entry.ts)}`);
-  } else if(entry.isBot){
-    log('crawl', `🤖 ${entry.label} visited — ${fmtExact(entry.ts)}`);
-  }
-}
-
-function clearBotLog(){
-  try { localStorage.removeItem('ic_botvisits'); } catch(e){}
-  sbClearBotVisits();
-  agoTimers.forEach(t => clearInterval(t));
-  agoTimers = [];
-  botCounts = { googlebot:0, other:0, human:0 };
-  document.getElementById('bls-googlebot').textContent = '0';
-  document.getElementById('bls-other').textContent = '0';
-  document.getElementById('bls-human').textContent = '0';
-  document.getElementById('botlog-body').innerHTML = `<div class="botlog-empty" id="botlog-empty"><span class="spin" style="font-size:1.4rem;">◌</span><br><br>Monitoring for crawler visits...<br><span style="font-size:0.58rem;opacity:0.5;">Every page load is logged.</span></div>`;
-  document.getElementById('botlog-icon').textContent = '⏳';
-  document.getElementById('botlog-ago').innerHTML = '<span class="spin">◌</span> Waiting...';
-  document.getElementById('botlog-exact').textContent = 'No visits recorded yet';
-  toast('Bot log cleared', 'info');
-}
-
-// ── Run detection on THIS page load ──
-(function runVisitDetection(){
-  const entry = detectVisitor();
-  // Render after DOM is ready
-  window.addEventListener('load', () => {
-    renderBotLog();
-    // If this visit is new (within last 3 seconds), flash it
-    recordAndRenderVisit(entry);
-  }, { once: true });
-})();
-
-// TOAST
-// ═══════════════════════════════════
-function toast(msg, type='info'){
-  const zone = document.getElementById('toast-zone');
-  if(!zone) return;
-  const t = document.createElement('div');
-  const icons = { success:'✅', info:'📡', warn:'⚠️', error:'❌' };
-  t.className = `toast ${type}`;
-  t.innerHTML = `<span>${icons[type]||'📡'}</span><span>${he(msg)}</span>`;
-  zone.appendChild(t);
-  setTimeout(() => { if(t.parentNode) t.parentNode.removeChild(t); }, 4500);
-}
-// ═══════════════════════════════════════════════════════
-// SUPABASE LAYER
-// All data persisted to Supabase. Falls back to
-// localStorage when not connected.
-// Tables: ic_urls, ic_settings, ic_report, ic_log, ic_bot_visits
-// ═══════════════════════════════════════════════════════
-
-const SB_SQL_SCHEMA = `
--- Run this in your Supabase SQL editor once
--- Dashboard → SQL Editor → New Query → paste → Run
-
-create table if not exists ic_settings (
-  key   text primary key,
-  value text
-);
-
-create table if not exists ic_urls (
-  url        text primary key,
-  short_code text unique,
-  target_url text default '',
-  verdict    text default 'pending',
-  coverage   text default '',
-  last_crawl text default '',
-  last_check text default '',
-  added_at   timestamptz default now()
-);
-
--- Migration: add columns if upgrading from older schema
-alter table ic_urls add column if not exists short_code text unique;
-alter table ic_urls add column if not exists target_url text default '';
-
-create table if not exists ic_report (
-  id         bigint generated always as identity primary key,
-  url        text,
-  verdict    text,
-  coverage   text,
-  last_crawl text,
-  checked_at timestamptz default now()
-);
-
-create table if not exists ic_log (
-  id         bigint generated always as identity primary key,
-  type       text,
-  msg        text,
-  logged_at  timestamptz default now()
-);
-
-create table if not exists ic_bot_visits (
-  id         bigint generated always as identity primary key,
-  ts         bigint,
-  ua         text,
-  label      text,
-  icon       text,
-  css_class  text,
-  is_bot     boolean,
-  is_google  boolean,
-  visited_at timestamptz default now()
-);
-
--- Short link redirect table (used by Vercel Edge Function)
-create table if not exists ic_short_links (
-  code       text primary key,
-  target     text not null,
-  created_at timestamptz default now(),
-  hits       bigint default 0
-);
-
--- Optional: keep tables lean (auto-delete old rows)
--- create or replace function trim_ic_log() returns trigger language plpgsql as $$
--- begin delete from ic_log where id in (select id from ic_log order by id desc offset 500); return null; end; $$;
--- create trigger trg_trim_ic_log after insert on ic_log for each statement execute function trim_ic_log();
-`.trim();
-
-// ── Config state ──────────────────────────────────────
-let SB = null;   // { url, key } when connected
-let sbConnected = false;
-let sbBarOpen = false;
-
-function sbDirty(){
-  const btn = document.getElementById('sb-connect-btn');
-  if(btn) { btn.textContent = 'Connect'; btn.style.background = ''; }
-}
-
-function sbToggle(){
-  sbBarOpen = !sbBarOpen;
-  const bar     = document.getElementById('sb-bar');
-  const chevron = document.getElementById('sb-chevron');
-  bar.className = 'sb-bar ' + (sbBarOpen ? 'sb-bar-expanded' : 'sb-bar-collapsed');
-  if(chevron) chevron.textContent = sbBarOpen ? '▼' : '▲';
-}
-
-function sbMsg(text, type){
-  const el = document.getElementById('sb-msg');
-  if(!el) return;
-  el.className = 'sb-msg ' + type;
-  el.textContent = text;
-}
-
-async function sbConnect(){
-  const urlVal = document.getElementById('sb-url').value.trim().replace(/\/$/, '');
-  const keyVal = document.getElementById('sb-key').value.trim();
-  if(!urlVal || !keyVal){ sbMsg('Fill in both Project URL and Key', 'err'); return; }
-
-  const btn = document.getElementById('sb-connect-btn');
-  btn.disabled = true; btn.textContent = 'Testing...';
-
-  try {
-    // Test with a lightweight query
-    const resp = await fetch(`${urlVal}/rest/v1/ic_settings?limit=1`, {
-      headers: {
-        'apikey': keyVal,
-        'Authorization': `Bearer ${keyVal}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if(resp.status === 404 || resp.status === 400){
-      sbMsg('Table ic_settings not found — run the SQL schema first (copy button above)', 'err');
-      btn.disabled = false; btn.textContent = 'Connect';
-      return;
-    }
-    if(!resp.ok && resp.status !== 200){
-      const t = await resp.text();
-      sbMsg(`Connection failed (${resp.status}): ${t.slice(0,80)}`, 'err');
-      btn.disabled = false; btn.textContent = 'Connect';
-      return;
-    }
-
-    SB = { url: urlVal, key: keyVal };
-    sbConnected = true;
-
-    // Persist creds in localStorage
-    try { localStorage.setItem('ic_sb_url', urlVal); localStorage.setItem('ic_sb_key', keyVal); } catch(e){}
-
-    // Update UI
-    const dot = document.getElementById('sb-dot');
-    if(dot) dot.className = 'sb-status-dot connected';
-    const st = document.getElementById('sb-toggle-status');
-    if(st) st.textContent = '— Connected ✓';
-    sbMsg('Connected! Loading saved data...', 'ok');
-    btn.disabled = false; btn.textContent = '✓ Connected';
-    btn.style.background = '#00b860';
-
-    // Load all persisted data from Supabase
-    await sbLoadAll();
-
-    toast('⚡ Supabase connected & data loaded!', 'success');
-    // Auto-collapse after 2s
-    setTimeout(() => { if(sbBarOpen){ sbToggle(); } }, 2000);
-
-  } catch(e){
-    sbMsg(`Error: ${e.message}`, 'err');
-    btn.disabled = false; btn.textContent = 'Connect';
-  }
-}
-
-function sbCopySchema(){
-  navigator.clipboard?.writeText(SB_SQL_SCHEMA).then(() => {
-    toast('📋 SQL schema copied — paste in Supabase SQL Editor!', 'success');
-  }).catch(() => {
-    // fallback
-    const ta = document.createElement('textarea');
-    ta.value = SB_SQL_SCHEMA;
-    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
-    document.body.removeChild(ta);
-    toast('📋 SQL schema copied!', 'success');
-  });
-}
-
-// ── Core REST helpers ─────────────────────────────────
-
-async function sbGet(table, params=''){ 
-  if(!SB) return null;
-  const r = await fetch(`${SB.url}/rest/v1/${table}${params}`, {
-    headers: { 'apikey': SB.key, 'Authorization': `Bearer ${SB.key}` }
-  });
-  if(!r.ok) return null;
-  return r.json();
-}
-
-async function sbUpsert(table, data, onConflict=''){ 
-  if(!SB) return;
-  await fetch(`${SB.url}/rest/v1/${table}${onConflict ? '?on_conflict='+onConflict : ''}`, {
-    method: 'POST',
-    headers: {
-      'apikey': SB.key,
-      'Authorization': `Bearer ${SB.key}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates'
-    },
-    body: JSON.stringify(Array.isArray(data) ? data : [data])
-  });
-}
-
-async function sbInsert(table, data){ 
-  if(!SB) return;
-  await fetch(`${SB.url}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: {
-      'apikey': SB.key,
-      'Authorization': `Bearer ${SB.key}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify(Array.isArray(data) ? data : [data])
-  });
-}
-
-async function sbDelete(table, match){ 
-  if(!SB) return;
-  const q = Object.entries(match).map(([k,v]) => `${k}=eq.${encodeURIComponent(v)}`).join('&');
-  await fetch(`${SB.url}/rest/v1/${table}?${q}`, {
-    method: 'DELETE',
-    headers: { 'apikey': SB.key, 'Authorization': `Bearer ${SB.key}` }
-  });
-}
-
-async function sbDeleteAll(table){ 
-  if(!SB) return;
-  await fetch(`${SB.url}/rest/v1/${table}?id=gte.0`, {
-    method: 'DELETE',
-    headers: { 'apikey': SB.key, 'Authorization': `Bearer ${SB.key}` }
-  });
-}
-
-// ── LOAD ALL ──────────────────────────────────────────
-
-async function sbLoadAll(){
-  if(!SB) return;
-
-  try {
-    // 1. Settings
-    const settings = await sbGet('ic_settings');
-    if(settings){
-      const map = {};
-      settings.forEach(r => map[r.key] = r.value);
-
-      const fieldMap = {
-        'ic_urls': 'url-input',
-        'ic_gsc_token': 'gsc-token',
-        'ic_gsc_site_oauth': 'gsc-site-oauth',
-        'ic_sa_json': 'sa-json',
-        'ic_gsc_site_sa': 'gsc-site-sa'
-      };
-      for(const [key, elId] of Object.entries(fieldMap)){
-        if(map[key]){
-          const el = document.getElementById(elId);
-          if(el) el.value = map[key];
-          try { localStorage.setItem(key, map[key]); } catch(e){}
-        }
-      }
-      if(map['ic_interval']){
-        document.getElementById('check-interval').value = map['ic_interval'];
-        try { localStorage.setItem('ic_interval', map['ic_interval']); } catch(e){}
-      }
-      if(map['ic_gscper']){
-        document.getElementById('gsc-per-cycle').value = map['ic_gscper'];
-        try { localStorage.setItem('ic_gscper', map['ic_gscper']); } catch(e){}
-      }
-      if(map['ic_gsc_mode']){
-        switchGscMode(map['ic_gsc_mode'], document.getElementById(`tab-${map['ic_gsc_mode']}`));
-      }
-    }
-
-    // 2. URL statuses
-    const urlRows = await sbGet('ic_urls', '?order=added_at.asc');
-    if(urlRows && urlRows.length){
-      // Rebuild url-input from Supabase
-      const urlInput = document.getElementById('url-input');
-      const existingUrls = parseURLs();
-      const sbUrls = urlRows.map(r => r.url);
-      // Merge: keep existing + add from SB
-      const merged = [...new Set([...existingUrls, ...sbUrls])];
-      urlInput.value = merged.join('\n');
-      // Restore status
-      urlRows.forEach(r => {
-        if(r.verdict && r.verdict !== 'pending'){
-          urlStatus[r.url] = { verdict: r.verdict, coverage: r.coverage||'', lastCrawl: r.last_crawl||'', lastCheck: r.last_check||'' };
-        }
-      });
-    }
-
-    // 3. Bot visits
-    const botRows = await sbGet('ic_bot_visits', '?order=ts.desc&limit=200');
-    if(botRows && botRows.length){
-      const visits = botRows.map(r => ({
-        ts: r.ts, ua: r.ua, label: r.label, icon: r.icon,
-        cssClass: r.css_class, isBot: r.is_bot, isGoogle: r.is_google
-      }));
-      try { localStorage.setItem('ic_botvisits', JSON.stringify(visits)); } catch(e){}
-    }
-
-    // 4. Short link map
-    await sbLoadShortLinks();
-
-    // 5. Re-init
-    onUrlChange();
-    onGscChange();
-    buildCrawlSurface();
-    updateStats();
-    renderBotLog();
-
-    log('system', `⚡ Supabase: loaded ${urlRows?.length||0} URLs, ${settings?.length||0} settings, ${botRows?.length||0} bot visits`);
-  } catch(e){
-    log('error', `Supabase load error: ${e.message}`);
-  }
-}
-
-// ── SAVE HELPERS (called from existing functions) ─────
-
-async function sbSaveSetting(key, value){
-  if(!SB) return;
-  await sbUpsert('ic_settings', { key, value }, 'key');
-}
-
-async function sbSaveUrls(){
-  if(!SB) return;
-  // Upsert all current URLs (new ones get added_at, existing ones keep it)
-  if(!urls.length) return;
-  const rows = urls.map(url => ({
-    url,
-    verdict:    urlStatus[url]?.verdict    || 'pending',
-    coverage:   urlStatus[url]?.coverage   || '',
-    last_crawl: urlStatus[url]?.lastCrawl  || '',
-    last_check: urlStatus[url]?.lastCheck  || ''
-  }));
-  await sbUpsert('ic_urls', rows, 'url');
-}
-
-async function sbUpdateUrlStatus(url){
-  if(!SB) return;
-  const s = urlStatus[url];
-  if(!s) return;
-  await sbUpsert('ic_urls', {
-    url,
-    verdict:    s.verdict,
-    coverage:   s.coverage   || '',
-    last_crawl: s.lastCrawl  || '',
-    last_check: s.lastCheck  || ''
-  }, 'url');
-}
-
-async function sbDeleteUrl(url){
-  if(!SB) return;
-  await sbDelete('ic_urls', { url });
-}
-
-async function sbSaveReport(entry){
-  if(!SB) return;
-  await sbInsert('ic_report', {
-    url:        entry.url,
-    verdict:    entry.verdict,
-    coverage:   entry.coverage  || '',
-    last_crawl: entry.lastCrawl || ''
-  });
-}
-
-async function sbSaveLog(entry){
-  if(!SB) return;
-  // Fire-and-forget, no await to avoid blocking UI
-  sbInsert('ic_log', { type: entry.type, msg: entry.msg }).catch(()=>{});
-}
-
-async function sbSaveBotVisit(entry){
-  if(!SB) return;
-  await sbInsert('ic_bot_visits', {
-    ts:        entry.ts,
-    ua:        entry.ua,
-    label:     entry.label,
-    icon:      entry.icon,
-    css_class: entry.cssClass,
-    is_bot:    entry.isBot,
-    is_google: entry.isGoogle
-  });
-}
-
-async function sbClearReport(){
-  if(!SB) return;
-  // Delete all report rows - use gt.0 trick for bigint id
-  await fetch(`${SB.url}/rest/v1/ic_report?id=gt.0`, {
-    method: 'DELETE',
-    headers: { 'apikey': SB.key, 'Authorization': `Bearer ${SB.key}` }
-  });
-}
-
-async function sbClearBotVisits(){
-  if(!SB) return;
-  await fetch(`${SB.url}/rest/v1/ic_bot_visits?id=gt.0`, {
-    method: 'DELETE',
-    headers: { 'apikey': SB.key, 'Authorization': `Bearer ${SB.key}` }
-  });
-}
-
-async function sbClearLog(){
-  if(!SB) return;
-  await fetch(`${SB.url}/rest/v1/ic_log?id=gt.0`, {
-    method: 'DELETE',
-    headers: { 'apikey': SB.key, 'Authorization': `Bearer ${SB.key}` }
-  });
-}
-
-// ── Short link persistence ─────────────────────────────
-// Short codes are stored in ic_settings as a single JSON blob (key: ic_shortmap)
-// and also in localStorage for instant sitemap generation on load.
-
-async function sbSaveShortLinks(){
-  // Save to localStorage immediately
-  try { localStorage.setItem('ic_shortmap', JSON.stringify(shortMap)); } catch(e){}
-  // Save to Supabase settings blob
-  if(!SB) return;
-  await sbUpsert('ic_settings', { key: 'ic_shortmap', value: JSON.stringify(shortMap) }, 'key');
-  // Also upsert each code into ic_short_links so the Edge Function can do fast lookups
-  const rows = Object.entries(shortMap).map(([target, code]) => ({ code, target }));
-  if(rows.length) await sbUpsert('ic_short_links', rows, 'code');
-}
-
-async function sbLoadShortLinks(){
-  // Try Supabase first
-  if(SB){
-    const rows = await sbGet('ic_settings', '?key=eq.ic_shortmap');
-    if(rows && rows[0]?.value){
-      try {
-        const map = JSON.parse(rows[0].value);
-        Object.assign(shortMap, map);
-        Object.entries(map).forEach(([orig, code]) => { shortMapRev[code] = orig; });
-        try { localStorage.setItem('ic_shortmap', rows[0].value); } catch(e){}
-        return;
-      } catch(e){}
-    }
-  }
-  // Fallback: localStorage
-  try {
-    const saved = JSON.parse(localStorage.getItem('ic_shortmap') || '{}');
-    Object.assign(shortMap, saved);
-    Object.entries(saved).forEach(([orig, code]) => { shortMapRev[code] = orig; });
-  } catch(e){}
-}
-
-// ── HARDCODED SUPABASE CREDENTIALS (auto-connect, no UI shown) ──────────────
-const _SB_URL = 'https://rbqfmhyuzdizaexbfcem.supabase.co';
-const _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJicWZtaHl1emRpemFleGJmY2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDQwOTIsImV4cCI6MjA5MDEyMDA5Mn0.jXYe6qqqc5NCxvMPVVhiGqMYXfyiQ92bj5eCQt2J4WM';
-
-window.addEventListener('load', function sbAutoConnect(){
-  // Inject into hidden inputs so existing sbConnect() logic works unchanged
-  const uEl = document.getElementById('sb-url');
-  const kEl = document.getElementById('sb-key');
-  if(uEl) uEl.value = _SB_URL;
-  if(kEl) kEl.value = _SB_KEY;
-  // Persist to localStorage so reload is instant
-  try { localStorage.setItem('ic_sb_url', _SB_URL); localStorage.setItem('ic_sb_key', _SB_KEY); } catch(e){}
-  // Silent connect — no toast, no toggle open
-  sbConnectSilent();
-}, { once: true });
-
-async function sbConnectSilent(){
-  try {
-    const resp = await fetch(`${_SB_URL}/rest/v1/ic_settings?limit=1`, {
-      headers: { 'apikey': _SB_KEY, 'Authorization': `Bearer ${_SB_KEY}`, 'Content-Type': 'application/json' }
-    });
-    if(resp.ok || resp.status === 200){
-      SB = { url: _SB_URL, key: _SB_KEY };
-      sbConnected = true;
-      const dot = document.getElementById('sb-dot');
-      if(dot) dot.className = 'sb-status-dot connected';
-      await sbLoadAll();
-      buildCrawlSurface(); // re-render now short codes are loaded from Supabase
-      log('system', '⚡ Supabase auto-connected — data synced');
-    }
-  } catch(e){
-    log('error', `Supabase auto-connect failed: ${e.message}`);
-  }
-}
-
-// ═══════════════════════════════════════════════════════
-// SEO PUBLIC INDEX — H1/H2-structured dofollow link lists
-// visible to all crawlers (Googlebot, Bingbot, etc.)
-// Rebuilt on every URL change. Positioned off-screen but
-// fully in the DOM — crawlers index it, users don't see it.
-// ═══════════════════════════════════════════════════════
-
-function rebuildSeoIndex(){
-  const allList     = document.getElementById('seo-url-list');
-  const indexedList = document.getElementById('seo-indexed-list');
-  const pendingList = document.getElementById('seo-pending-list');
-  const crawledList = document.getElementById('seo-crawled-list');
-  if(!allList) return;
-
-  if(!urls.length){
-    allList.innerHTML = indexedList.innerHTML = pendingList.innerHTML = crawledList.innerHTML = '';
-    return;
-  }
-
-  const buckets = { indexed: [], crawled: [], pending: [], error: [], unknown: [] };
-  urls.forEach(u => {
-    const v = urlStatus[u]?.verdict || 'unknown';
-    (buckets[v] || buckets.unknown).push(u);
-  });
-
-  allList.innerHTML = urls.map(u => {
-    const su = shortMap[u] ? SHORT_BASE + shortMap[u] : u;
-    return `<li><a href="${he(su)}" rel="dofollow" target="_blank" title="${he(u)}">${he(su)}</a></li>`;
-  }).join('');
-
-  indexedList.innerHTML = buckets.indexed.map(u => {
-    const su = shortMap[u] ? SHORT_BASE + shortMap[u] : u;
-    return `<li><a href="${he(su)}" rel="dofollow" target="_blank" title="${he(u)}">${he(su)}</a></li>`;
-  }).join('') || '<li>No confirmed indexed URLs yet.</li>';
-
-  pendingList.innerHTML = [...buckets.pending, ...buckets.unknown].map(u => {
-    const su = shortMap[u] ? SHORT_BASE + shortMap[u] : u;
-    return `<li><a href="${he(su)}" rel="dofollow" target="_blank" title="${he(u)}">${he(su)}</a></li>`;
-  }).join('') || '<li>Queue is empty.</li>';
-
-  crawledList.innerHTML = buckets.crawled.map(u => {
-    const su = shortMap[u] ? SHORT_BASE + shortMap[u] : u;
-    return `<li><a href="${he(su)}" rel="dofollow" target="_blank" title="${he(u)}">${he(su)}</a></li>`;
-  }).join('') || '<li>No crawled-not-indexed URLs yet.</li>';
-
-  const h1 = document.getElementById('seo-h1');
-  if(h1) h1.textContent = `Backlink Campaign Index — ${urls.length} Active URLs`;
-  const h2all = document.getElementById('seo-h2-all');
-  if(h2all) h2all.textContent = `All Submitted Backlink URLs (${urls.length})`;
-  const h2idx = document.getElementById('seo-h2-indexed');
-  if(h2idx) h2idx.textContent = `Confirmed Indexed URLs (${buckets.indexed.length})`;
-  const h2pnd = document.getElementById('seo-h2-pending');
-  if(h2pnd) h2pnd.textContent = `Pending Crawl Queue (${buckets.pending.length + buckets.unknown.length})`;
-  const h2crw = document.getElementById('seo-h2-crawled');
-  if(h2crw) h2crw.textContent = `Crawled URLs Awaiting Index (${buckets.crawled.length})`;
-}
-
-// ── Ping engines after every URL paste (signal fresh content) ──
-let _pingDebounce = null;
-// ═══════════════════════════════════════════════════════
-// GSC URL INSPECTION — auto-request indexing of
-// https://indexernow.vercel.app/ after every URL paste.
-// Uses whatever GSC credentials are set in the sidebar.
-// This is a real GSC API call — not just a ping.
-// ═══════════════════════════════════════════════════════
-const INDEXER_TARGET_URL = 'https://indexernow.vercel.app/';
-
-async function gscRequestIndexingOfTarget(){
-  // Get current GSC config (oauth or SA)
-  let cfg = null;
-  try { cfg = await getGscConfig(); } catch(e){ return; }
-  if(!cfg){ return; } // No credentials set — skip silently
-
-  const { token, siteUrl } = cfg;
-  const normSite = siteUrl.endsWith('/') ? siteUrl : siteUrl + '/';
-
-  try {
-    const resp = await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
+    // Save blob to ic_settings
+    await fetch(`${SB_URL}/rest/v1/ic_settings`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        inspectionUrl:   INDEXER_TARGET_URL,
-        siteUrl:         normSite,
-        requestIndexing: true   // fires the actual "Request Indexing" call
-      })
+      headers: { ...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key: 'ic_shortmap', value: JSON.stringify(shortMap) })
     });
-
-    if(resp.ok){
-      const data = await resp.json();
-      const verdict = data?.inspectionResult?.indexStatusResult?.verdict || 'UNKNOWN';
-      const coverage = data?.inspectionResult?.indexStatusResult?.coverageState || '';
-      log('gsc', `🔍 GSC auto-inspect ${INDEXER_TARGET_URL} → ${verdict}${coverage ? ' (' + coverage + ')' : ''}`);
-    } else if(resp.status === 401){
-      log('error', `GSC auto-index: token expired (401) — refresh credentials`);
-    } else if(resp.status === 403){
-      log('error', `GSC auto-index: 403 — property not accessible with current credentials`);
-    } else if(resp.status === 429){
-      log('error', `GSC auto-index: 429 quota hit — will retry next paste`);
-    } else {
-      log('error', `GSC auto-index: HTTP ${resp.status}`);
+    // Upsert each code into ic_short_links for the Edge Function
+    const rows = Object.entries(shortMap).map(([target, code]) => ({ code, target }));
+    if (rows.length) {
+      await fetch(`${SB_URL}/rest/v1/ic_short_links`, {
+        method: 'POST',
+        headers: { ...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify(rows)
+      });
     }
-  } catch(e){
-    log('error', `GSC auto-index network error: ${e.message}`);
-  }
+  } catch(e) {}
 }
 
-function pingOnNewContent(){
-  clearTimeout(_pingDebounce);
-  _pingDebounce = setTimeout(async () => {
-    if(!urls.length) return;
-    const sitemapUrl = encodeURIComponent(`${location.href.split('?')[0]}?sitemap=xml&t=${Date.now()}`);
-    const feedUrl    = `${location.href.split('?')[0]}?feed=rss&t=${Date.now()}`;
-
-    // ── 1. Google sitemap ping — signals new backlinks surface ──
-    try { await fetch(`https://www.google.com/ping?sitemap=${sitemapUrl}`, { mode: 'no-cors' }); } catch(e){}
-    try { await fetch(`https://www.google.com/webmasters/sitemaps/ping?sitemap=${sitemapUrl}`, { mode: 'no-cors' }); } catch(e){}
-
-    // ── 2. Bing sitemap ping ──
-    try { await fetch(`https://www.bing.com/ping?sitemap=${sitemapUrl}`, { mode: 'no-cors' }); } catch(e){}
-
-    // ── 3. WebSub publish — hubs see updated feed ──
-    try {
-      const body = new URLSearchParams();
-      body.append('hub.mode', 'publish');
-      body.append('hub.url', feedUrl);
-      await fetch('https://pubsubhubbub.appspot.com/', { method: 'POST', body, mode: 'no-cors' });
-    } catch(e){}
-
-    // ── 4. XML-RPC blog ping ──
-    const pageUrl = location.href.split('?')[0];
-    const xmlBody = `<?xml version="1.0"?><methodCall><methodName>weblogUpdates.ping</methodName><params><param><value>IndexCore Backlink Campaign Index</value></param><param><value>${pageUrl}</value></param></params></methodCall>`;
-    try { await fetch('https://rpc.pingomatic.com/', { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/xml'}, body:xmlBody }); } catch(e){}
-
-    log('crawl', `🤖 Crawl signals fired — ${urls.length} URLs in surface`);
-
-    // ── 5. GSC URL Inspection fetch for indexernow.vercel.app ──
-    // Fires AFTER pings so token fetch doesn't block the ping cascade
-    await gscRequestIndexingOfTarget();
-
-  }, 900);
+// ── Supabase: load shortmap ─────────────────────────────
+async function loadFromSupabase() {
+  try {
+    const resp = await fetch(`${SB_URL}/rest/v1/ic_settings?key=eq.ic_shortmap&select=value&limit=1`, {
+      headers: SB_HEADERS
+    });
+    if (!resp.ok) return;
+    const rows = await resp.json();
+    if (rows && rows[0]?.value) {
+      const map = JSON.parse(rows[0].value);
+      Object.assign(shortMap, map);
+      Object.entries(map).forEach(([orig, code]) => { shortMapRev[code] = orig; });
+      try { localStorage.setItem('ic_shortmap', rows[0].value); } catch(e) {}
+      // Re-render if URLs are already pasted
+      const urls = parseUrls();
+      if (urls.length) render(urls);
+    }
+  } catch(e) {}
 }
-
-// ── Patch onUrlChange to also rebuild SEO index + fire pings ──
-const _origOnUrlChange = onUrlChange;
-onUrlChange = function(){
-  _origOnUrlChange();
-  rebuildSeoIndex();
-  pingOnNewContent();
-};
-
-// Also patch buildCrawlSurface so status updates rebuild the SEO index too
-const _origBuildCrawlSurface = buildCrawlSurface;
-buildCrawlSurface = function(){
-  _origBuildCrawlSurface();
-  rebuildSeoIndex();
-};
-
 </script>
 </body>
 </html>
