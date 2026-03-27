@@ -1,1 +1,484 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backlink Shortener</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f8f9fb;
+  --surface: #ffffff;
+  --border: #e2e4e8;
+  --accent: #16a34a;
+  --accent-dim: rgba(22,163,74,0.09);
+  --text: #1a1d23;
+  --muted: #6b7280;
+  --muted2: #9ca3af;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-display: 'Syne', sans-serif;
+}
+
+body {
+  font-family: var(--font-mono);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 13px;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+.logo {
+  width: 36px; height: 36px;
+  background: var(--accent);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  animation: pulse 3s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.35); }
+  50%      { box-shadow: 0 0 0 8px rgba(22,163,74,0); }
+}
+.header-text h1 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+.header-text p {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Input box ── */
+.input-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.input-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+textarea {
+  width: 100%;
+  height: 130px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  line-height: 1.6;
+}
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--muted2); }
+
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.url-count {
+  font-size: 0.62rem;
+  color: var(--muted2);
+}
+.btn-clear {
+  font-size: 0.62rem;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 5px;
+  transition: background 0.1s;
+}
+.btn-clear:hover { background: var(--bg); color: #dc2626; }
+
+/* ── Results ── */
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.results-title {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.btn-copy-all {
+  font-size: 0.62rem;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(22,163,74,0.25);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.btn-copy-all:hover { background: rgba(22,163,74,0.16); }
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted2);
+  font-size: 0.72rem;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}
+
+/* ── Link rows ── */
+.link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.link-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  transition: border-color 0.15s;
+}
+.link-row:hover { border-color: rgba(22,163,74,0.35); }
+
+.row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.short-url {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.short-url:hover { text-decoration: underline; }
+
+.btn-copy {
+  font-size: 0.58rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid rgba(22,163,74,0.25);
+  border-radius: 5px;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.btn-copy:hover { background: rgba(22,163,74,0.18); }
+.btn-copy.copied { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.row-bottom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 2px;
+}
+.arrow-label {
+  font-size: 0.55rem;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.orig-url {
+  font-size: 0.65rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-decoration: none;
+}
+.orig-url:hover { color: var(--text); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1a1d23;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 8px 18px;
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+  z-index: 999;
+  white-space: nowrap;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">🔗</div>
+    <div class="header-text">
+      <h1>Backlink Shortener</h1>
+      <p>Paste URLs → auto-generates 301 short links via indexernow.vercel.app</p>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-card">
+    <div class="input-label">Paste backlink URLs (one per line)</div>
+    <textarea id="url-input" placeholder="https://www.kikyus.net/t20888-topic&#10;https://naijarave.com/thread/example&#10;https://forum.example.com/post/123" oninput="onInput()"></textarea>
+    <div class="input-footer">
+      <span class="url-count" id="url-count">0 URLs</span>
+      <button class="btn-clear" onclick="clearAll()">✕ Clear</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results-wrap">
+    <div class="empty" id="empty-state">Paste URLs above — short links appear here instantly.</div>
+    <div id="results-header" style="display:none;" class="results-header">
+      <span class="results-title" id="results-title">0 Short Links</span>
+      <button class="btn-copy-all" onclick="copyAll()">⎘ Copy All Short Links</button>
+    </div>
+    <div class="link-list" id="link-list"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────
+const SHORT_BASE = 'https://indexernow.vercel.app/link/';
+const SB_URL     = 'https://rbqfmhyuzdizaexbfcem.supabase.co';
+const SB_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJicWZtaHl1emRpemFleGJmY2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDQwOTIsImV4cCI6MjA5MDEyMDA5Mn0.jXYe6qqqc5NCxvMPVVhiGqMYXfyiQ92bj5eCQt2J4WM';
+const SB_HEADERS = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+
+// ── State ───────────────────────────────────────────────
+let shortMap    = {}; // original url → code
+let shortMapRev = {}; // code → original url
+
+// ── Init: load saved shortmap ───────────────────────────
+try {
+  const saved = JSON.parse(localStorage.getItem('ic_shortmap') || '{}');
+  Object.assign(shortMap, saved);
+  Object.entries(saved).forEach(([orig, code]) => { shortMapRev[code] = orig; });
+} catch(e) {}
+
+// Also pull from Supabase in background
+loadFromSupabase();
+
+// ── Code generator: 5 random lowercase letters ──────────
+function genCode() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz';
+  let code, tries = 0;
+  do {
+    code = Array.from({length: 5}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    tries++;
+  } while (shortMapRev[code] && tries < 200);
+  return code;
+}
+
+// ── Parse textarea ──────────────────────────────────────
+function parseUrls() {
+  return (document.getElementById('url-input').value || '')
+    .split('\n')
+    .map(u => u.trim())
+    .filter(u => u.startsWith('http://') || u.startsWith('https://'));
+}
+
+// ── Main: runs on every keystroke ──────────────────────
+function onInput() {
+  const urls = parseUrls();
+
+  // Assign codes synchronously
+  let newCodes = false;
+  for (const url of urls) {
+    if (!shortMap[url]) {
+      const code = genCode();
+      shortMap[url]    = code;
+      shortMapRev[code] = url;
+      newCodes = true;
+    }
+  }
+
+  // Persist immediately
+  if (newCodes) {
+    try { localStorage.setItem('ic_shortmap', JSON.stringify(shortMap)); } catch(e) {}
+    saveToSupabase(); // background
+  }
+
+  render(urls);
+}
+
+// ── Render results list ─────────────────────────────────
+function render(urls) {
+  const empty      = document.getElementById('empty-state');
+  const header     = document.getElementById('results-header');
+  const list       = document.getElementById('link-list');
+  const countEl    = document.getElementById('url-count');
+  const titleEl    = document.getElementById('results-title');
+
+  countEl.textContent = `${urls.length} URL${urls.length !== 1 ? 's' : ''}`;
+
+  if (!urls.length) {
+    empty.style.display  = '';
+    header.style.display = 'none';
+    list.innerHTML       = '';
+    return;
+  }
+
+  empty.style.display  = 'none';
+  header.style.display = 'flex';
+  titleEl.textContent  = `${urls.length} Short Link${urls.length !== 1 ? 's' : ''}`;
+
+  list.innerHTML = urls.map(url => {
+    const code     = shortMap[url];
+    const shortUrl = code ? SHORT_BASE + code : SHORT_BASE + '…';
+    const origDisp = url.replace(/^https?:\/\//, '').slice(0, 65);
+    return `
+    <div class="link-row">
+      <div class="row-top">
+        <a class="short-url" href="${he(shortUrl)}" target="_blank" title="${he(shortUrl)}">${he(shortUrl)}</a>
+        <button class="btn-copy" onclick="copyOne(this, '${he(shortUrl)}')">COPY</button>
+      </div>
+      <div class="row-bottom">
+        <span class="arrow-label">301 ↗</span>
+        <a class="orig-url" href="${he(url)}" target="_blank" title="${he(url)}">${he(origDisp)}${url.length > 65 ? '…' : ''}</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Copy one short link ─────────────────────────────────
+function copyOne(btn, url) {
+  navigator.clipboard?.writeText(url).then(() => {
+    btn.textContent = '✓ COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+// ── Copy all short links ────────────────────────────────
+function copyAll() {
+  const urls  = parseUrls();
+  const lines = urls.map(u => shortMap[u] ? SHORT_BASE + shortMap[u] : u).join('\n');
+  navigator.clipboard?.writeText(lines).then(() => toast(`⎘ ${urls.length} short links copied!`));
+}
+
+// ── Clear ───────────────────────────────────────────────
+function clearAll() {
+  document.getElementById('url-input').value = '';
+  onInput();
+}
+
+// ── Toast ───────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── HTML escape ─────────────────────────────────────────
+function he(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Supabase: save shortmap ─────────────────────────────
+async function saveToSupabase() {
+  try {
+    // Save blob to ic_settings
+    await fetch(`${SB_URL}/rest/v1/ic_settings`, {
+      method: 'POST',
+      headers: { ...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key: 'ic_shortmap', value: JSON.stringify(shortMap) })
+    });
+    // Upsert each code into ic_short_links for the Edge Function
+    const rows = Object.entries(shortMap).map(([target, code]) => ({ code, target }));
+    if (rows.length) {
+      await fetch(`${SB_URL}/rest/v1/ic_short_links`, {
+        method: 'POST',
+        headers: { ...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify(rows)
+      });
+    }
+  } catch(e) {}
+}
+
+// ── Supabase: load shortmap ─────────────────────────────
+async function loadFromSupabase() {
+  try {
+    const resp = await fetch(`${SB_URL}/rest/v1/ic_settings?key=eq.ic_shortmap&select=value&limit=1`, {
+      headers: SB_HEADERS
+    });
+    if (!resp.ok) return;
+    const rows = await resp.json();
+    if (rows && rows[0]?.value) {
+      const map = JSON.parse(rows[0].value);
+      Object.assign(shortMap, map);
+      Object.entries(map).forEach(([orig, code]) => { shortMapRev[code] = orig; });
+      try { localStorage.setItem('ic_shortmap', rows[0].value); } catch(e) {}
+      // Re-render if URLs are already pasted
+      const urls = parseUrls();
+      if (urls.length) render(urls);
+    }
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
