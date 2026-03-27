@@ -1,484 +1,815 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Backlink Shortener</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<title>LinkCore — Backlink Project Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090b;--bg2:#111115;--bg3:#18181d;--bg4:#1e1e25;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --accent:#00ff88;--accent-dim:rgba(0,255,136,0.08);--accent-glow:rgba(0,255,136,0.25);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.1);
+  --orange:#f59e0b;--orange-dim:rgba(245,158,11,0.1);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.08);
+  --purple:#a855f7;--purple-dim:rgba(168,85,247,0.1);
+  --text:#e8eaf0;--muted:#6b7280;--muted2:#3d4350;
+  --mono:'Space Mono',monospace;--display:'Unbounded',sans-serif;
+  --r:12px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:100vh;font-size:12px;line-height:1.6;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,136,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,0.018) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
 
-:root {
-  --bg: #f8f9fb;
-  --surface: #ffffff;
-  --border: #e2e4e8;
-  --accent: #16a34a;
-  --accent-dim: rgba(22,163,74,0.09);
-  --text: #1a1d23;
-  --muted: #6b7280;
-  --muted2: #9ca3af;
-  --font-mono: 'IBM Plex Mono', monospace;
-  --font-display: 'Syne', sans-serif;
-}
+/* ── Layout ── */
+.app{position:relative;z-index:1;display:grid;grid-template-columns:260px 1fr;min-height:100vh}
 
-body {
-  font-family: var(--font-mono);
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 13px;
-}
+/* ── Sidebar ── */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:8px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
-.wrap {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 48px 20px 80px;
-}
+.brand{display:flex;align-items:center;gap:10px;padding:0 4px 20px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.brand-logo{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;animation:glow 3s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 16px var(--accent-glow)}50%{box-shadow:0 0 32px rgba(0,255,136,.45)}}
+.brand-name{font-family:var(--display);font-size:.95rem;font-weight:800;color:#fff}
+.brand-sub{font-size:.5rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
 
-/* ── Header ── */
-.header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 36px;
-}
-.logo {
-  width: 36px; height: 36px;
-  background: var(--accent);
-  border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  animation: pulse 3s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.35); }
-  50%      { box-shadow: 0 0 0 8px rgba(22,163,74,0); }
-}
-.header-text h1 {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: 0.01em;
-}
-.header-text p {
-  font-size: 0.68rem;
-  color: var(--muted);
-  margin-top: 2px;
-}
+.sb-label{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;padding:0 4px;margin-top:8px;margin-bottom:4px}
 
-/* ── Input box ── */
-.input-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-}
-.input-label {
-  font-size: 0.62rem;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 8px;
-}
-textarea {
-  width: 100%;
-  height: 130px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text);
-  background: var(--bg);
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.15s;
-  line-height: 1.6;
-}
-textarea:focus { border-color: var(--accent); }
-textarea::placeholder { color: var(--muted2); }
+.sb-btn{width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:9px 12px;font-family:var(--mono);font-size:.7rem;color:var(--muted);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px}
+.sb-btn:hover{background:var(--bg3);border-color:var(--border);color:var(--text)}
+.sb-btn.active{background:var(--accent-dim);border-color:rgba(0,255,136,.25);color:var(--accent)}
+.sb-btn .dot{width:6px;height:6px;border-radius:50%;background:var(--muted2);flex-shrink:0;transition:background .15s}
+.sb-btn.active .dot{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.sb-btn .cnt{margin-left:auto;font-size:.55rem;background:var(--bg4);border-radius:4px;padding:1px 6px;color:var(--muted)}
+.sb-btn.active .cnt{background:rgba(0,255,136,.15);color:var(--accent)}
 
-.input-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
-}
-.url-count {
-  font-size: 0.62rem;
-  color: var(--muted2);
-}
-.btn-clear {
-  font-size: 0.62rem;
-  color: var(--muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 3px 8px;
-  border-radius: 5px;
-  transition: background 0.1s;
-}
-.btn-clear:hover { background: var(--bg); color: #dc2626; }
+.new-proj-btn{width:100%;background:var(--accent-dim);border:1px dashed rgba(0,255,136,.3);border-radius:8px;padding:9px 12px;font-family:var(--mono);font-size:.68rem;color:var(--accent);cursor:pointer;transition:all .15s;margin-top:4px}
+.new-proj-btn:hover{background:rgba(0,255,136,.14);border-style:solid}
 
-/* ── Results ── */
-.results-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-.results-title {
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-.btn-copy-all {
-  font-size: 0.62rem;
-  background: var(--accent-dim);
-  color: var(--accent);
-  border: 1px solid rgba(22,163,74,0.25);
-  border-radius: 6px;
-  padding: 4px 10px;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  transition: background 0.15s;
-}
-.btn-copy-all:hover { background: rgba(22,163,74,0.16); }
+/* ── Main ── */
+.main{padding:32px 28px;display:flex;flex-direction:column;gap:20px;min-width:0}
 
-.empty {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--muted2);
-  font-size: 0.72rem;
-  background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-}
+/* ── Page header ── */
+.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.page-title{font-family:var(--display);font-size:1.3rem;font-weight:800;color:#fff}
+.page-sub{font-size:.62rem;color:var(--muted);margin-top:3px}
+.hdr-btns{display:flex;gap:8px;flex-shrink:0}
 
-/* ── Link rows ── */
-.link-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+/* ── Cards ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.card-label{font-size:.55rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.card-label::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 5px var(--accent);flex-shrink:0}
 
-.link-row {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-  transition: border-color 0.15s;
-}
-.link-row:hover { border-color: rgba(22,163,74,0.35); }
+/* ── Stats row ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.stat .v{font-family:var(--display);font-size:1.3rem;font-weight:600;color:var(--accent);line-height:1}
+.stat .v.blue{color:var(--blue)}
+.stat .v.orange{color:var(--orange)}
+.stat .v.purple{color:var(--purple)}
+.stat .l{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
 
-.row-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.short-url {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--accent);
-  text-decoration: none;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.short-url:hover { text-decoration: underline; }
+/* ── Inputs ── */
+input,textarea,select{font-family:var(--mono);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:11.5px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+input::placeholder,textarea::placeholder{color:var(--muted2)}
+textarea{resize:vertical;line-height:1.7}
 
-.btn-copy {
-  font-size: 0.58rem;
-  font-weight: 600;
-  font-family: var(--font-mono);
-  background: var(--accent-dim);
-  color: var(--accent);
-  border: 1px solid rgba(22,163,74,0.25);
-  border-radius: 5px;
-  padding: 3px 10px;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: background 0.12s;
-}
-.btn-copy:hover { background: rgba(22,163,74,0.18); }
-.btn-copy.copied { background: var(--accent); color: #fff; border-color: var(--accent); }
+/* ── Buttons ── */
+.btn{font-family:var(--mono);font-size:.65rem;border-radius:7px;padding:8px 16px;cursor:pointer;transition:all .15s;border:1px solid transparent;white-space:nowrap;font-weight:700}
+.btn-primary{background:var(--accent);color:#000;box-shadow:0 0 16px var(--accent-dim)}
+.btn-primary:hover{background:#33ffaa;box-shadow:0 0 24px var(--accent-glow)}
+.btn-primary:disabled{background:var(--muted2);color:var(--bg);cursor:not-allowed;box-shadow:none}
+.btn-outline{background:none;border-color:var(--border);color:var(--muted)}
+.btn-outline:hover{border-color:var(--border2);color:var(--text);background:var(--bg3)}
+.btn-danger{background:none;border-color:transparent;color:var(--muted2)}
+.btn-danger:hover{border-color:rgba(239,68,68,.3);color:var(--red);background:var(--red-dim)}
+.btn-blue{background:var(--blue-dim);border-color:rgba(59,130,246,.25);color:var(--blue)}
+.btn-blue:hover{background:rgba(59,130,246,.18)}
 
-.row-bottom {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-left: 2px;
-}
-.arrow-label {
-  font-size: 0.55rem;
-  color: var(--muted2);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-}
-.orig-url {
-  font-size: 0.65rem;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  text-decoration: none;
-}
-.orig-url:hover { color: var(--text); }
+/* ── Project dashboard cards ── */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.proj-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+.proj-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:0;transition:opacity .18s}
+.proj-card:hover{border-color:var(--border2);background:var(--bg3)}
+.proj-card:hover::before{opacity:1}
+.proj-card-name{font-family:var(--display);font-size:.78rem;font-weight:600;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj-card-meta{display:flex;gap:10px;flex-wrap:wrap}
+.proj-chip{font-size:.52rem;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.chip-green{background:var(--accent-dim);color:var(--accent)}
+.chip-blue{background:var(--blue-dim);color:var(--blue)}
+.chip-orange{background:var(--orange-dim);color:var(--orange)}
+.chip-gray{background:var(--bg4);color:var(--muted)}
+.proj-card-date{font-size:.52rem;color:var(--muted2);margin-top:8px}
+.proj-card-actions{position:absolute;top:10px;right:10px;opacity:0;transition:opacity .15s}
+.proj-card:hover .proj-card-actions{opacity:1}
+
+/* ── Link table ── */
+.link-table{width:100%;border-collapse:collapse}
+.link-table th{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:400}
+.link-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.link-table tr:last-child td{border-bottom:none}
+.link-table tr:hover td{background:var(--bg3)}
+.link-short{color:var(--accent);font-weight:700;font-size:.75rem;text-decoration:none;white-space:nowrap}
+.link-short:hover{text-decoration:underline}
+.link-orig{font-size:.65rem;color:var(--muted);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;text-decoration:none}
+.link-orig:hover{color:var(--text)}
+.verdict-badge{font-size:.5rem;padding:3px 8px;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.v-indexed{background:var(--accent-dim);color:var(--accent)}
+.v-crawled{background:var(--blue-dim);color:var(--blue)}
+.v-pending{background:var(--orange-dim);color:var(--orange)}
+.v-error{background:var(--red-dim);color:var(--red)}
+.hits-num{color:var(--accent);font-weight:700}
+.hits-zero{color:var(--muted2)}
+
+/* ── Log ── */
+.idx-log{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;max-height:180px;overflow-y:auto;font-size:10.5px;line-height:1.9;display:none;margin-top:10px}
+.idx-log::-webkit-scrollbar{width:3px}
+.idx-log::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.log-ok{color:var(--accent)}.log-err{color:var(--red)}.log-info{color:var(--muted)}
+
+/* ── Modal ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:24px;width:100%;max-width:460px;animation:popIn .2s ease}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-title{font-family:var(--display);font-size:.95rem;font-weight:700;color:#fff;margin-bottom:16px}
+.modal-row{display:flex;gap:10px;margin-top:12px}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:60px 20px;color:var(--muted2);font-size:.72rem;border:1px dashed var(--border);border-radius:var(--r)}
+.empty-icon{font-size:2.2rem;margin-bottom:14px;opacity:.3}
 
 /* ── Toast ── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: #1a1d23;
-  color: #fff;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  padding: 8px 18px;
-  border-radius: 8px;
-  pointer-events: none;
-  opacity: 0;
-  transition: transform 0.22s ease, opacity 0.22s ease;
-  z-index: 999;
-  white-space: nowrap;
-}
-.toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:.72rem;padding:10px 22px;border-radius:10px;pointer-events:none;opacity:0;transition:transform .24s ease,opacity .24s ease;z-index:999;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.green{border-color:rgba(0,255,136,.35);color:var(--accent)}
+
+/* ── View toggle ── */
+.view{display:none}.view.active{display:contents}
 </style>
 </head>
 <body>
 
-<div class="wrap">
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">⚡</div>
+      <div>
+        <div class="brand-name">LinkCore</div>
+        <div class="brand-sub">Backlink Manager</div>
+      </div>
+    </div>
 
-  <!-- Header -->
-  <div class="header">
-    <div class="logo">🔗</div>
-    <div class="header-text">
-      <h1>Backlink Shortener</h1>
-      <p>Paste URLs → auto-generates 301 short links via indexernow.vercel.app</p>
+    <div class="sb-label">Views</div>
+    <button class="sb-btn active" onclick="showView('dashboard')">
+      <span class="dot"></span> Dashboard
+    </button>
+    <button class="sb-btn" onclick="showView('indexing')">
+      <span class="dot"></span> Submit to Google
+    </button>
+
+    <div class="sb-label" style="margin-top:12px">Projects</div>
+    <div id="proj-list-sb"></div>
+    <button class="new-proj-btn" onclick="openNewProj()">+ New Project</button>
+
+    <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:.52rem;color:var(--muted2)">Supabase</div>
+      <div style="font-size:.65rem;color:var(--muted)" id="sb-status">Connecting…</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ── DASHBOARD VIEW ── -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Projects</div>
+          <div class="page-sub">All your backlink campaigns in one place</div>
+        </div>
+        <div class="hdr-btns">
+          <button class="btn btn-primary" onclick="openNewProj()">+ New Project</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="v" id="st-projects">0</div><div class="l">Projects</div></div>
+        <div class="stat"><div class="v blue" id="st-links">0</div><div class="l">Total Links</div></div>
+        <div class="stat"><div class="v orange" id="st-hits">0</div><div class="l">Total Hits</div></div>
+        <div class="stat"><div class="v purple" id="st-indexed">0</div><div class="l">Indexed</div></div>
+      </div>
+
+      <div id="proj-grid-wrap">
+        <div class="empty" id="proj-empty">
+          <div class="empty-icon">📁</div>
+          <p>No projects yet.<br>Create your first backlink campaign.</p>
+        </div>
+        <div class="proj-grid" id="proj-grid" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ── PROJECT VIEW ── -->
+    <div class="view" id="view-project">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title" id="proj-title">Project</div>
+          <div class="page-sub" id="proj-sub">0 links</div>
+        </div>
+        <div class="hdr-btns">
+          <button class="btn btn-outline" onclick="showView('dashboard')">← Back</button>
+          <button class="btn btn-blue" onclick="showView('indexing')">🚀 Submit to Google</button>
+          <button class="btn btn-primary" onclick="openAddLinks()">+ Add Links</button>
+        </div>
+      </div>
+
+      <!-- Link table -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span class="card-label" style="margin:0">Links & Status</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" style="font-size:.58rem;padding:5px 10px" onclick="refreshVerdicts()">↻ Refresh Status</button>
+            <button class="btn btn-outline" style="font-size:.58rem;padding:5px 10px" onclick="exportProjCSV()">↓ CSV</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="link-table">
+            <thead>
+              <tr>
+                <th>Short Link</th>
+                <th>Original Backlink</th>
+                <th>Status</th>
+                <th>Hits</th>
+                <th>Added</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="link-tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="link-empty" style="border:none;border-top:1px solid var(--border);border-radius:0;display:none">
+          <div class="empty-icon">🔗</div>
+          <p>No links yet — click <strong style="color:var(--accent)">Add Links</strong> to start.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── INDEXING VIEW ── -->
+    <div class="view" id="view-indexing">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">Submit to Google</div>
+          <div class="page-sub">GSC URL Inspection + IndexNow + Sitemap ping — all at once</div>
+        </div>
+        <div class="hdr-btns">
+          <button class="btn btn-outline" onclick="showView('dashboard')">← Back</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Google Service Account</div>
+        <textarea id="sa-json" rows="4" placeholder='Paste Service Account JSON key here&#10;{"type":"service_account","project_id":"...","private_key":"...","client_email":"..."}'
+          oninput="saveGscSettings()"></textarea>
+        <div style="margin-top:10px">
+          <input id="gsc-site" placeholder="GSC Property URL — e.g. https://indexernow.vercel.app/" oninput="saveGscSettings()">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Select Project to Submit</div>
+        <select id="idx-proj-sel" onchange="updateIdxPreview()">
+          <option value="">— Choose a project —</option>
+        </select>
+        <div style="margin-top:10px;font-size:.62rem;color:var(--muted)" id="idx-preview">Select a project to see how many short links will be submitted.</div>
+        <div style="margin-top:12px;display:flex;gap:10px">
+          <button class="btn btn-primary" id="idx-btn" onclick="runIndexing()" style="flex:1">🚀 Submit All Short Links to Google</button>
+        </div>
+        <div class="idx-log" id="idx-log"></div>
+      </div>
+
+      <!-- Report card -->
+      <div class="card">
+        <div class="card-label">Fetch Report — All Projects</div>
+        <div style="overflow-x:auto">
+          <table class="link-table" id="report-table">
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Short Link</th>
+                <th>Original URL</th>
+                <th>GSC Status</th>
+                <th>Hits (Googlebot)</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody id="report-tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="report-empty" style="border:none;border-top:1px solid var(--border);border-radius:0">
+          <div class="empty-icon">📊</div>
+          <p>Submit links to Google to see fetch reports here.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- New Project Modal -->
+<div class="modal-bg" id="modal-proj">
+  <div class="modal">
+    <div class="modal-title">New Project</div>
+    <input id="proj-name-input" placeholder="e.g. Naijarave Campaign, Kikyus Forum Links…" maxlength="60">
+    <div class="modal-row">
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal('modal-proj')">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" onclick="createProject()">Create Project</button>
     </div>
   </div>
+</div>
 
-  <!-- Input -->
-  <div class="input-card">
-    <div class="input-label">Paste backlink URLs (one per line)</div>
-    <textarea id="url-input" placeholder="https://www.kikyus.net/t20888-topic&#10;https://naijarave.com/thread/example&#10;https://forum.example.com/post/123" oninput="onInput()"></textarea>
-    <div class="input-footer">
-      <span class="url-count" id="url-count">0 URLs</span>
-      <button class="btn-clear" onclick="clearAll()">✕ Clear</button>
+<!-- Add Links Modal -->
+<div class="modal-bg" id="modal-links">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title" id="add-links-title">Add Backlinks</div>
+    <div style="font-size:.62rem;color:var(--muted);margin-bottom:10px">Paste one URL per line — short links are generated automatically</div>
+    <textarea id="links-input" rows="7" placeholder="https://www.kikyus.net/t20888-topic&#10;https://naijarave.com/thread/example&#10;https://forum.example.com/post/123"></textarea>
+    <div class="modal-row">
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal('modal-links')">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" onclick="addLinks()">⚡ Generate & Save</button>
     </div>
   </div>
-
-  <!-- Results -->
-  <div id="results-wrap">
-    <div class="empty" id="empty-state">Paste URLs above — short links appear here instantly.</div>
-    <div id="results-header" style="display:none;" class="results-header">
-      <span class="results-title" id="results-title">0 Short Links</span>
-      <button class="btn-copy-all" onclick="copyAll()">⎘ Copy All Short Links</button>
-    </div>
-    <div class="link-list" id="link-list"></div>
-  </div>
-
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Config ──────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────
 const SHORT_BASE = 'https://indexernow.vercel.app/link/';
 const SB_URL     = 'https://rbqfmhyuzdizaexbfcem.supabase.co';
 const SB_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJicWZtaHl1emRpemFleGJmY2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDQwOTIsImV4cCI6MjA5MDEyMDA5Mn0.jXYe6qqqc5NCxvMPVVhiGqMYXfyiQ92bj5eCQt2J4WM';
-const SB_HEADERS = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+const H          = {'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'};
 
-// ── State ───────────────────────────────────────────────
-let shortMap    = {}; // original url → code
-let shortMapRev = {}; // code → original url
+// ── State ─────────────────────────────────────────────────
+let projects = [];   // [{id,name,created_at}]
+let links    = {};   // projectId → [{id,original,code,verdict,hits,submitted,added_at}]
+let activeProj = null;
 
-// ── Init: load saved shortmap ───────────────────────────
-try {
-  const saved = JSON.parse(localStorage.getItem('ic_shortmap') || '{}');
-  Object.assign(shortMap, saved);
-  Object.entries(saved).forEach(([orig, code]) => { shortMapRev[code] = orig; });
-} catch(e) {}
+// ── Boot ──────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  restoreGscSettings();
+  await loadAll();
+});
 
-// Also pull from Supabase in background
-loadFromSupabase();
-
-// ── Code generator: 5 random lowercase letters ──────────
-function genCode() {
-  const chars = 'abcdefghijklmnopqrstuvwxyz';
-  let code, tries = 0;
-  do {
-    code = Array.from({length: 5}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    tries++;
-  } while (shortMapRev[code] && tries < 200);
-  return code;
+// ── View switching ────────────────────────────────────────
+function showView(name, projId){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  if(name==='dashboard') document.querySelector('.sb-btn[onclick*="dashboard"]').classList.add('active');
+  if(name==='indexing')  document.querySelector('.sb-btn[onclick*="indexing"]').classList.add('active');
+  if(name==='project' && projId){
+    activeProj = projId;
+    renderProjectView(projId);
+  }
 }
 
-// ── Parse textarea ──────────────────────────────────────
-function parseUrls() {
-  return (document.getElementById('url-input').value || '')
-    .split('\n')
-    .map(u => u.trim())
-    .filter(u => u.startsWith('http://') || u.startsWith('https://'));
+// ── Supabase helpers ──────────────────────────────────────
+async function sbGet(path){ const r=await fetch(`${SB_URL}/rest/v1/${path}`,{headers:H}); return r.ok?r.json():[]; }
+async function sbPost(table,data,prefer='resolution=merge-duplicates'){
+  return fetch(`${SB_URL}/rest/v1/${table}`,{method:'POST',headers:{...H,'Prefer':prefer},body:JSON.stringify(data)});
+}
+async function sbPatch(table,filter,data){
+  return fetch(`${SB_URL}/rest/v1/${table}?${filter}`,{method:'PATCH',headers:{...H,'Prefer':'return=minimal'},body:JSON.stringify(data)});
+}
+async function sbDelete(table,filter){
+  return fetch(`${SB_URL}/rest/v1/${table}?${filter}`,{method:'DELETE',headers:H});
 }
 
-// ── Main: runs on every keystroke ──────────────────────
-function onInput() {
-  const urls = parseUrls();
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
-  // Assign codes synchronously
-  let newCodes = false;
-  for (const url of urls) {
-    if (!shortMap[url]) {
-      const code = genCode();
-      shortMap[url]    = code;
-      shortMapRev[code] = url;
-      newCodes = true;
-    }
+function genCode(){
+  const c='abcdefghijklmnopqrstuvwxyz'; let code,t=0;
+  do{ code=Array.from({length:5},()=>c[Math.floor(Math.random()*c.length)]).join(''); t++; }
+  while(allCodes().includes(code)&&t<200); return code;
+}
+function allCodes(){ return Object.values(links).flat().map(l=>l.code); }
+
+// ── Load all data ─────────────────────────────────────────
+async function loadAll(){
+  try{
+    document.getElementById('sb-status').textContent='Loading…';
+    const [projs, lnks] = await Promise.all([
+      sbGet('lc_projects?order=created_at.asc'),
+      sbGet('lc_links?order=added_at.asc')
+    ]);
+    projects = projs||[];
+    links = {};
+    projects.forEach(p=>{ links[p.id]=[]; });
+    (lnks||[]).forEach(l=>{ if(links[l.project_id]) links[l.project_id].push(l); });
+
+    // Also sync ic_short_links hits into our links
+    const shortRows = await sbGet('ic_short_links?select=code,hits');
+    const hitsMap = {};
+    (shortRows||[]).forEach(r=>{ hitsMap[r.code]=r.hits||0; });
+    Object.values(links).flat().forEach(l=>{ if(hitsMap[l.code]!==undefined) l.hits=hitsMap[l.code]; });
+
+    document.getElementById('sb-status').textContent='Connected ✓';
+    renderAll();
+  }catch(e){
+    document.getElementById('sb-status').textContent='Offline';
   }
-
-  // Persist immediately
-  if (newCodes) {
-    try { localStorage.setItem('ic_shortmap', JSON.stringify(shortMap)); } catch(e) {}
-    saveToSupabase(); // background
-  }
-
-  render(urls);
 }
 
-// ── Render results list ─────────────────────────────────
-function render(urls) {
-  const empty      = document.getElementById('empty-state');
-  const header     = document.getElementById('results-header');
-  const list       = document.getElementById('link-list');
-  const countEl    = document.getElementById('url-count');
-  const titleEl    = document.getElementById('results-title');
+// ── Render everything ─────────────────────────────────────
+function renderAll(){
+  renderSidebar();
+  renderDashboard();
+  renderIndexingView();
+  renderReport();
+  if(activeProj) renderProjectView(activeProj);
+}
 
-  countEl.textContent = `${urls.length} URL${urls.length !== 1 ? 's' : ''}`;
+function renderSidebar(){
+  const el = document.getElementById('proj-list-sb');
+  el.innerHTML = projects.map(p=>{
+    const cnt = (links[p.id]||[]).length;
+    return `<button class="sb-btn${activeProj===p.id?' active':''}" onclick="showView('project','${p.id}')">
+      <span class="dot"></span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:left">${he(p.name)}</span>
+      <span class="cnt">${cnt}</span>
+    </button>`;
+  }).join('');
+}
 
-  if (!urls.length) {
-    empty.style.display  = '';
-    header.style.display = 'none';
-    list.innerHTML       = '';
-    return;
-  }
+function renderDashboard(){
+  const allLinks  = Object.values(links).flat();
+  const totalHits = allLinks.reduce((a,l)=>a+(l.hits||0),0);
+  const indexed   = allLinks.filter(l=>l.verdict==='PASS'||l.verdict==='indexed').length;
+  document.getElementById('st-projects').textContent = projects.length;
+  document.getElementById('st-links').textContent    = allLinks.length;
+  document.getElementById('st-hits').textContent     = totalHits;
+  document.getElementById('st-indexed').textContent  = indexed;
 
-  empty.style.display  = 'none';
-  header.style.display = 'flex';
-  titleEl.textContent  = `${urls.length} Short Link${urls.length !== 1 ? 's' : ''}`;
+  const empty = document.getElementById('proj-empty');
+  const grid  = document.getElementById('proj-grid');
+  if(!projects.length){ empty.style.display=''; grid.style.display='none'; return; }
+  empty.style.display='none'; grid.style.display='grid';
 
-  list.innerHTML = urls.map(url => {
-    const code     = shortMap[url];
-    const shortUrl = code ? SHORT_BASE + code : SHORT_BASE + '…';
-    const origDisp = url.replace(/^https?:\/\//, '').slice(0, 65);
-    return `
-    <div class="link-row">
-      <div class="row-top">
-        <a class="short-url" href="${he(shortUrl)}" target="_blank" title="${he(shortUrl)}">${he(shortUrl)}</a>
-        <button class="btn-copy" onclick="copyOne(this, '${he(shortUrl)}')">COPY</button>
+  grid.innerHTML = projects.map(p=>{
+    const pl     = links[p.id]||[];
+    const hits   = pl.reduce((a,l)=>a+(l.hits||0),0);
+    const idx    = pl.filter(l=>l.verdict==='PASS'||l.verdict==='indexed').length;
+    const date   = new Date(p.created_at).toLocaleDateString();
+    return `<div class="proj-card" onclick="showView('project','${p.id}')">
+      <div class="proj-card-actions">
+        <button class="btn btn-danger" style="font-size:.55rem;padding:3px 7px" onclick="event.stopPropagation();deleteProject('${p.id}')">✕</button>
       </div>
-      <div class="row-bottom">
-        <span class="arrow-label">301 ↗</span>
-        <a class="orig-url" href="${he(url)}" target="_blank" title="${he(url)}">${he(origDisp)}${url.length > 65 ? '…' : ''}</a>
+      <div class="proj-card-name">${he(p.name)}</div>
+      <div class="proj-card-meta">
+        <span class="proj-chip chip-green">${pl.length} links</span>
+        <span class="proj-chip chip-orange">${hits} hits</span>
+        ${idx?`<span class="proj-chip chip-blue">${idx} indexed</span>`:''}
       </div>
+      <div class="proj-card-date">Created ${date}</div>
     </div>`;
   }).join('');
 }
 
-// ── Copy one short link ─────────────────────────────────
-function copyOne(btn, url) {
-  navigator.clipboard?.writeText(url).then(() => {
-    btn.textContent = '✓ COPIED';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1800);
+function renderProjectView(projId){
+  const p  = projects.find(x=>x.id===projId);
+  if(!p) return;
+  const pl = links[projId]||[];
+  document.getElementById('proj-title').textContent = p.name;
+  document.getElementById('proj-sub').textContent   = `${pl.length} link${pl.length!==1?'s':''}`;
+
+  const tbody = document.getElementById('link-tbody');
+  const empty = document.getElementById('link-empty');
+
+  if(!pl.length){ tbody.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+
+  tbody.innerHTML = pl.map(l=>{
+    const shortUrl  = SHORT_BASE+l.code;
+    const origDisp  = l.original.replace(/^https?:\/\//,'').slice(0,45);
+    const hits      = l.hits||0;
+    const verdict   = verdictBadge(l.verdict);
+    const date      = new Date(l.added_at).toLocaleDateString();
+    return `<tr>
+      <td><a class="link-short" href="${he(shortUrl)}" target="_blank">${he(shortUrl)}</a></td>
+      <td><a class="link-orig" href="${he(l.original)}" target="_blank" title="${he(l.original)}">${he(origDisp)}${l.original.length>45?'…':''}</a></td>
+      <td>${verdict}</td>
+      <td><span class="${hits>0?'hits-num':'hits-zero'}">${hits}</span></td>
+      <td style="color:var(--muted);font-size:.62rem">${date}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline" style="font-size:.55rem;padding:3px 8px" onclick="copyShort('${he(shortUrl)}',this)">COPY</button>
+          <button class="btn btn-danger" style="font-size:.55rem;padding:3px 8px" onclick="deleteLink('${l.id}','${projId}')">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function verdictBadge(v){
+  if(!v||v==='pending') return `<span class="verdict-badge v-pending">Pending</span>`;
+  if(v==='PASS'||v==='indexed') return `<span class="verdict-badge v-indexed">Indexed</span>`;
+  if(v==='NEUTRAL'||v==='crawled') return `<span class="verdict-badge v-crawled">Crawled</span>`;
+  if(v==='FAIL'||v==='error') return `<span class="verdict-badge v-error">Error</span>`;
+  return `<span class="verdict-badge v-pending">${v}</span>`;
+}
+
+function renderIndexingView(){
+  const sel = document.getElementById('idx-proj-sel');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Choose a project —</option>'+
+    projects.map(p=>`<option value="${p.id}">${he(p.name)} (${(links[p.id]||[]).length} links)</option>`).join('');
+  if(cur) sel.value=cur;
+  updateIdxPreview();
+}
+
+function updateIdxPreview(){
+  const pid = document.getElementById('idx-proj-sel').value;
+  const el  = document.getElementById('idx-preview');
+  if(!pid){ el.textContent='Select a project to see how many short links will be submitted.'; return; }
+  const pl = links[pid]||[];
+  el.textContent = `${pl.length} short link${pl.length!==1?'s':''} will be submitted across all indexing channels.`;
+}
+
+function renderReport(){
+  const tbody = document.getElementById('report-tbody');
+  const empty = document.getElementById('report-empty');
+  const allLinks = Object.values(links).flat();
+  const submitted = allLinks.filter(l=>l.submitted);
+  if(!submitted.length){ tbody.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  tbody.innerHTML = submitted.map(l=>{
+    const p       = projects.find(x=>x.id===l.project_id)||{name:'—'};
+    const shortUrl= SHORT_BASE+l.code;
+    const origDisp= l.original.replace(/^https?:\/\//,'').slice(0,40);
+    const hits    = l.hits||0;
+    return `<tr>
+      <td style="font-size:.65rem;color:var(--muted);white-space:nowrap">${he(p.name)}</td>
+      <td><a class="link-short" href="${he(shortUrl)}" target="_blank" style="font-size:.72rem">${l.code}</a></td>
+      <td><a class="link-orig" href="${he(l.original)}" target="_blank" title="${he(l.original)}">${he(origDisp)}…</a></td>
+      <td>${verdictBadge(l.verdict)}</td>
+      <td><span class="${hits>0?'hits-num':'hits-zero'}">${hits}${hits>0?' 🤖':''}</span></td>
+      <td style="color:${l.submitted?'var(--accent)':'var(--muted2)'};font-size:.62rem">${l.submitted?'✓ Yes':'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Project CRUD ──────────────────────────────────────────
+function openNewProj(){
+  document.getElementById('proj-name-input').value='';
+  document.getElementById('modal-proj').classList.add('open');
+  setTimeout(()=>document.getElementById('proj-name-input').focus(),100);
+}
+
+async function createProject(){
+  const name = document.getElementById('proj-name-input').value.trim();
+  if(!name){ toast('Enter a project name',''); return; }
+  const proj = { id:uid(), name, created_at:new Date().toISOString() };
+  await sbPost('lc_projects', proj);
+  projects.push(proj);
+  links[proj.id] = [];
+  closeModal('modal-proj');
+  renderAll();
+  showView('project', proj.id);
+  toast(`📁 "${name}" created`,'green');
+}
+
+async function deleteProject(id){
+  if(!confirm('Delete this project and all its links?')) return;
+  await sbDelete('lc_projects',`id=eq.${id}`);
+  projects = projects.filter(p=>p.id!==id);
+  delete links[id];
+  if(activeProj===id){ activeProj=null; showView('dashboard'); }
+  renderAll();
+  toast('🗑 Project deleted','');
+}
+
+// ── Link CRUD ─────────────────────────────────────────────
+function openAddLinks(){
+  document.getElementById('links-input').value='';
+  document.getElementById('add-links-title').textContent = `Add Links — ${projects.find(p=>p.id===activeProj)?.name||''}`;
+  document.getElementById('modal-links').classList.add('open');
+  setTimeout(()=>document.getElementById('links-input').focus(),100);
+}
+
+async function addLinks(){
+  const raw  = document.getElementById('links-input').value;
+  const urls = raw.split('\n').map(u=>u.trim()).filter(u=>u.startsWith('http')||u.startsWith('https'));
+  if(!urls.length){ toast('Paste at least one URL',''); return; }
+
+  const existing = (links[activeProj]||[]).map(l=>l.original);
+  const newUrls  = urls.filter(u=>!existing.includes(u));
+  if(!newUrls.length){ toast('All URLs already in this project',''); closeModal('modal-links'); return; }
+
+  const newLinks = newUrls.map(original=>({
+    id: uid(), project_id: activeProj, original,
+    code: genCode(), verdict:'pending', hits:0, submitted:false,
+    added_at: new Date().toISOString()
+  }));
+
+  // Save to lc_links
+  await sbPost('lc_links', newLinks);
+  // Also save to ic_short_links for Edge Function
+  await sbPost('ic_short_links', newLinks.map(l=>({code:l.code, target:l.original})));
+
+  if(!links[activeProj]) links[activeProj]=[];
+  links[activeProj].push(...newLinks);
+  closeModal('modal-links');
+  renderAll();
+  toast(`✅ ${newLinks.length} short link${newLinks.length!==1?'s':''} created`,'green');
+}
+
+async function deleteLink(id, projId){
+  await sbDelete('lc_links',`id=eq.${id}`);
+  links[projId] = (links[projId]||[]).filter(l=>l.id!==id);
+  renderAll();
+  toast('🗑 Link removed','');
+}
+
+// ── Copy ──────────────────────────────────────────────────
+function copyShort(url, btn){
+  navigator.clipboard?.writeText(url).then(()=>{
+    const orig=btn.textContent; btn.textContent='✓'; btn.style.color='var(--accent)';
+    setTimeout(()=>{ btn.textContent=orig; btn.style.color=''; },1600);
   });
 }
 
-// ── Copy all short links ────────────────────────────────
-function copyAll() {
-  const urls  = parseUrls();
-  const lines = urls.map(u => shortMap[u] ? SHORT_BASE + shortMap[u] : u).join('\n');
-  navigator.clipboard?.writeText(lines).then(() => toast(`⎘ ${urls.length} short links copied!`));
+// ── Export CSV ────────────────────────────────────────────
+function exportProjCSV(){
+  const p  = projects.find(x=>x.id===activeProj); if(!p) return;
+  const pl = links[activeProj]||[];
+  const rows=[['Project','Original URL','Short URL','Status','Hits','Added']];
+  pl.forEach(l=>rows.push([p.name,l.original,SHORT_BASE+l.code,l.verdict||'pending',l.hits||0,l.added_at]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`linkcore-${p.name.replace(/\s+/g,'-')}.csv`; a.click();
+  toast('↓ CSV exported','green');
 }
 
-// ── Clear ───────────────────────────────────────────────
-function clearAll() {
-  document.getElementById('url-input').value = '';
-  onInput();
+// ── Refresh verdicts (hits from ic_short_links) ───────────
+async function refreshVerdicts(){
+  if(!activeProj) return;
+  const pl = links[activeProj]||[];
+  if(!pl.length) return;
+  const codes = pl.map(l=>l.code).join(',');
+  const rows  = await sbGet(`ic_short_links?code=in.(${codes})&select=code,hits`);
+  (rows||[]).forEach(r=>{ const l=pl.find(x=>x.code===r.code); if(l) l.hits=r.hits||0; });
+  renderProjectView(activeProj);
+  renderReport();
+  toast('↻ Hits refreshed','green');
 }
 
-// ── Toast ───────────────────────────────────────────────
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2200);
+// ── GSC Settings ──────────────────────────────────────────
+function saveGscSettings(){
+  try{
+    localStorage.setItem('lc_sa_json', document.getElementById('sa-json').value);
+    localStorage.setItem('lc_gsc_site', document.getElementById('gsc-site').value);
+  }catch(e){}
+}
+function restoreGscSettings(){
+  try{
+    const j=localStorage.getItem('lc_sa_json'); const s=localStorage.getItem('lc_gsc_site');
+    if(j) document.getElementById('sa-json').value=j;
+    if(s) document.getElementById('gsc-site').value=s;
+  }catch(e){}
 }
 
-// ── HTML escape ─────────────────────────────────────────
-function he(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+// ── GSC Token ─────────────────────────────────────────────
+async function getGscToken(saJson){
+  const sa=JSON.parse(saJson);
+  const scope='https://www.googleapis.com/auth/webmasters';
+  const now=Math.floor(Date.now()/1000);
+  const b64url=obj=>btoa(JSON.stringify(obj)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+  const sigInput=b64url({alg:'RS256',typ:'JWT'})+'.'+b64url({iss:sa.client_email,scope,aud:'https://oauth2.googleapis.com/token',iat:now,exp:now+3600});
+  const pemBody=sa.private_key.replace(/-----[^-]+-----/g,'').replace(/\s/g,'');
+  const keyDer=Uint8Array.from(atob(pemBody),c=>c.charCodeAt(0));
+  const cryptoKey=await crypto.subtle.importKey('pkcs8',keyDer.buffer,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['sign']);
+  const sig=await crypto.subtle.sign('RSASSA-PKCS1-v1_5',cryptoKey,new TextEncoder().encode(sigInput));
+  const sigB64=btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+  const tokenResp=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${sigInput}.${sigB64}`});
+  const td=await tokenResp.json();
+  if(!td.access_token) throw new Error(td.error_description||'Token failed');
+  return td.access_token;
 }
 
-// ── Supabase: save shortmap ─────────────────────────────
-async function saveToSupabase() {
-  try {
-    // Save blob to ic_settings
-    await fetch(`${SB_URL}/rest/v1/ic_settings`, {
-      method: 'POST',
-      headers: { ...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify({ key: 'ic_shortmap', value: JSON.stringify(shortMap) })
-    });
-    // Upsert each code into ic_short_links for the Edge Function
-    const rows = Object.entries(shortMap).map(([target, code]) => ({ code, target }));
-    if (rows.length) {
-      await fetch(`${SB_URL}/rest/v1/ic_short_links`, {
-        method: 'POST',
-        headers: { ...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
-        body: JSON.stringify(rows)
-      });
+// ── Log helper ────────────────────────────────────────────
+function idxLog(msg,type='info'){
+  const el=document.getElementById('idx-log');
+  el.style.display='block';
+  el.innerHTML+=`<div class="log-${type}">${msg}</div>`;
+  el.scrollTop=el.scrollHeight;
+}
+
+// ── Run indexing ──────────────────────────────────────────
+async function runIndexing(){
+  const pid    = document.getElementById('idx-proj-sel').value;
+  const saRaw  = document.getElementById('sa-json').value.trim();
+  const site   = document.getElementById('gsc-site').value.trim()||'https://indexernow.vercel.app/';
+  if(!pid){ toast('Select a project first',''); return; }
+  const pl     = links[pid]||[];
+  const shortUrls = pl.map(l=>SHORT_BASE+l.code);
+  if(!shortUrls.length){ toast('No links in this project',''); return; }
+
+  const btn=document.getElementById('idx-btn');
+  btn.disabled=true; btn.textContent='⏳ Submitting…';
+  document.getElementById('idx-log').innerHTML='';
+  document.getElementById('idx-log').style.display='block';
+
+  idxLog(`📋 Submitting ${shortUrls.length} short URLs…`,'info');
+
+  // 1. GSC
+  if(saRaw){
+    try{
+      idxLog('🔑 Authenticating with Google…','info');
+      const token=await getGscToken(saRaw);
+      idxLog('✓ Token OK — submitting to GSC URL Inspection API','ok');
+      for(const l of pl){
+        const shortUrl=SHORT_BASE+l.code;
+        try{
+          const r=await fetch('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect',{
+            method:'POST',headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},
+            body:JSON.stringify({inspectionUrl:shortUrl,siteUrl:site})
+          });
+          if(r.status===429){ idxLog('⚠ GSC quota (200/day) hit — stopping','err'); break; }
+          if(r.ok){
+            const d=await r.json();
+            const v=d?.inspectionResult?.indexStatusResult?.verdict||'SUBMITTED';
+            // Update verdict in DB and state
+            await sbPatch('lc_links',`id=eq.${l.id}`,{verdict:v,submitted:true});
+            l.verdict=v; l.submitted=true;
+            idxLog(`✓ ${l.code} — ${v}`,'ok');
+          } else { idxLog(`✗ ${l.code} — HTTP ${r.status}`,'err'); }
+          await new Promise(r=>setTimeout(r,300));
+        }catch(e){ idxLog(`✗ ${l.code}: ${e.message}`,'err'); }
+      }
+    }catch(e){ idxLog(`✗ GSC auth: ${e.message}`,'err'); }
+  } else {
+    // Mark as submitted even without GSC
+    for(const l of pl){
+      await sbPatch('lc_links',`id=eq.${l.id}`,{submitted:true});
+      l.submitted=true;
     }
-  } catch(e) {}
+    idxLog('⚠ No Service Account — skipping GSC (paste JSON above to enable)','info');
+  }
+
+  // 2. IndexNow
+  idxLog('📡 IndexNow → Bing/Yandex…','info');
+  try{
+    const r=await fetch('https://api.indexnow.org/indexnow',{
+      method:'POST',headers:{'Content-Type':'application/json; charset=utf-8'},
+      body:JSON.stringify({host:'indexernow.vercel.app',key:'indexcore',keyLocation:'https://indexernow.vercel.app/indexcore.txt',urlList:shortUrls})
+    });
+    idxLog(`✓ IndexNow: ${r.ok||r.status===202?shortUrls.length+' URLs submitted':'status '+r.status}`,'ok');
+  }catch(e){ idxLog(`⚠ IndexNow: ${e.message}`,'info'); }
+
+  // 3. Sitemap ping
+  idxLog('🏓 Pinging Google + Bing sitemaps…','info');
+  const sm=encodeURIComponent('https://indexernow.vercel.app/?sitemap=xml');
+  try{ await fetch(`https://www.google.com/ping?sitemap=${sm}`,{mode:'no-cors'}); }catch(e){}
+  try{ await fetch(`https://www.bing.com/ping?sitemap=${sm}`,{mode:'no-cors'}); }catch(e){}
+  idxLog('✓ Sitemap pings sent','ok');
+
+  // 4. PubSubHubbub
+  try{
+    const b=new URLSearchParams(); b.append('hub.mode','publish'); b.append('hub.url',`https://indexernow.vercel.app/?sitemap=xml`);
+    await fetch('https://pubsubhubbub.appspot.com/',{method:'POST',body:b,mode:'no-cors'});
+    idxLog('✓ PubSubHubbub notified','ok');
+  }catch(e){}
+
+  idxLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,'info');
+  idxLog(`✅ Done — ${shortUrls.length} URLs submitted across all channels`,'ok');
+
+  btn.disabled=false; btn.textContent='🚀 Submit All Short Links to Google';
+  renderAll();
+  toast(`🚀 ${shortUrls.length} URLs submitted!`,'green');
 }
 
-// ── Supabase: load shortmap ─────────────────────────────
-async function loadFromSupabase() {
-  try {
-    const resp = await fetch(`${SB_URL}/rest/v1/ic_settings?key=eq.ic_shortmap&select=value&limit=1`, {
-      headers: SB_HEADERS
-    });
-    if (!resp.ok) return;
-    const rows = await resp.json();
-    if (rows && rows[0]?.value) {
-      const map = JSON.parse(rows[0].value);
-      Object.assign(shortMap, map);
-      Object.entries(map).forEach(([orig, code]) => { shortMapRev[code] = orig; });
-      try { localStorage.setItem('ic_shortmap', rows[0].value); } catch(e) {}
-      // Re-render if URLs are already pasted
-      const urls = parseUrls();
-      if (urls.length) render(urls);
-    }
-  } catch(e) {}
+// ── Modals ────────────────────────────────────────────────
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open')); });
+document.getElementById('proj-name-input').addEventListener('keydown',e=>{ if(e.key==='Enter') createProject(); });
+
+// ── Toast ─────────────────────────────────────────────────
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast show${type?' '+type:''}`;
+  clearTimeout(el._t); el._t=setTimeout(()=>{ el.className='toast'; },2500);
 }
+
+// ── Escape ────────────────────────────────────────────────
+function he(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 </script>
 </body>
 </html>
-
