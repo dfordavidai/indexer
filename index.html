@@ -714,127 +714,24 @@ textarea{resize:vertical;line-height:1.7}
         <div style="font-size:.62rem;color:var(--muted);line-height:1.8">
           <div style="margin-bottom:8px"><strong style="color:var(--text)">robots.txt</strong> — Add these lines to maximize Googlebot's crawl aggressiveness:</div>
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:var(--mono);font-size:.6rem;color:var(--accent);line-height:2">
-            User-agent: Googlebot<br>Crawl-delay: 0<br>Allow: /<br>Sitemap: https://indexernow.vercel.app/sitemap.xml<br>Sitemap: https://indexernow.vercel.app/feed.xml
+            User-agent: *<br>Allow: /<br>Disallow: /api/<br><br>User-agent: Googlebot<br>Crawl-delay: 0<br>Allow: /<br>Allow: /link/<br><br>Sitemap: https://indexernow.vercel.app/sitemap.xml
           </div>
-
-          <!-- Response Headers card with copy -->
-          <div style="margin-top:14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
-            <strong style="color:var(--text)">Response Headers</strong>
-            <button class="btn btn-outline" style="font-size:.5rem;padding:3px 9px" onclick="copyCodeBlock('hdr-code','copy-hdr-btn')" id="copy-hdr-btn">📋 Copy</button>
+          <div style="margin-top:10px;margin-bottom:6px"><strong style="color:var(--text)">Response Headers</strong> — Add to your Vercel Edge Function for crawl trust signals:</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:var(--mono);font-size:.6rem;color:var(--blue);line-height:2">
+            Server-Timing: db;dur=4, cache;dur=1, total;dur=12<br>
+            Link: &lt;https://indexernow.vercel.app/sitemap.xml&gt;; rel=preconnect<br>
+            Link: &lt;https://indexernow.vercel.app/feed.xml&gt;; rel=prefetch
           </div>
-          <div id="hdr-code" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:var(--mono);font-size:.6rem;color:var(--blue);line-height:2;white-space:pre">Server-Timing: db;dur=4, cache;dur=1, total;dur=12
-Link: &lt;https://indexernow.vercel.app/sitemap.xml&gt;; rel=preconnect
-Link: &lt;https://indexernow.vercel.app/feed.xml&gt;; rel=prefetch</div>
           <div class="hint" style="margin-top:8px">Target &lt;50ms TTFB on your Edge Function. Use Vercel KV (Redis) to cache code→target map for sub-20ms warm reads. Google assigns more crawl budget to fast-responding domains.</div>
         </div>
       </div>
 
-      <!-- Edge Function full code card -->
-      <div class="card" style="margin-bottom:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div class="card-label" style="margin-bottom:0">⚡ Vercel Edge Function — Full Code</div>
-          <button class="btn btn-primary" style="font-size:.5rem;padding:4px 12px" onclick="copyCodeBlock('edge-fn-code','copy-edge-btn')" id="copy-edge-btn">📋 Copy All</button>
-        </div>
-        <div style="font-size:.58rem;color:var(--muted);margin-bottom:10px">
-          Save as <code style="color:var(--accent);background:var(--bg);padding:1px 5px;border-radius:3px">api/link.js</code> in your Vercel project. Handles redirect + injects response headers + structured data JSON-LD for Googlebot freshness pipeline.
-          <span style="color:var(--orange)">⚠ Uses 200 + meta-refresh (not 301) so Googlebot renders and reads the JSON-LD.</span>
-        </div>
-        <div id="edge-fn-code" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:var(--mono);font-size:.58rem;color:var(--text);line-height:1.85;overflow-x:auto;white-space:pre;max-height:340px;overflow-y:auto">// api/link.js — Vercel Edge Function
-// Deploy to: /api/link.js  (handles /link/[code] via vercel.json rewrite)
-// vercel.json: { "rewrites": [{ "source": "/link/:code", "destination": "/api/link" }] }
-
-export const config = { runtime: 'edge' };
-
-const SB_URL = 'https://rbqfmhyuzdizaexbfcem.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJicWZtaHl1emRpemFleGJmY2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDQwOTIsImV4cCI6MjA5MDEyMDA5Mn0.jXYe6qqqc5NCxvMPVVhiGqMYXfyiQ92bj5eCQt2J4WM';
-const SHORT_BASE = 'https://indexernow.vercel.app/link/';
-const SITEMAP_URL = 'https://indexernow.vercel.app/sitemap.xml';
-const FEED_URL   = 'https://indexernow.vercel.app/feed.xml';
-
-export default async function handler(req) {
-  const url  = new URL(req.url);
-  const code = url.pathname.split('/').pop();
-
-  if (!code) return new Response('Not found', { status: 404 });
-
-  // ── Fetch target from Supabase ──────────────────────────
-  const t0 = Date.now();
-  const res = await fetch(
-    `${SB_URL}/rest/v1/ic_short_links?code=eq.${encodeURIComponent(code)}&select=target&limit=1`,
-    { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
-  );
-  const rows   = res.ok ? await res.json() : [];
-  const target = rows?.[0]?.target;
-  const dbDur  = Date.now() - t0;
-
-  if (!target) {
-    return new Response('Link not found', { status: 404 });
-  }
-
-  // ── Increment hit counter (fire-and-forget) ─────────────
-  fetch(
-    `${SB_URL}/rest/v1/ic_short_links?code=eq.${encodeURIComponent(code)}`,
-    {
-      method: 'PATCH',
-      headers: {
-        apikey: SB_KEY,
-        Authorization: `Bearer ${SB_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal'
-      },
-      body: JSON.stringify({ hits: rows[0]?.hits + 1 || 1 })
-    }
-  ).catch(() => {});
-
-  const shortUrl  = `${SHORT_BASE}${code}`;
-  const todayISO  = new Date().toISOString().split('T')[0];
-
-  // ── Build headers (crawl trust signals) ─────────────────
-  const headers = new Headers({
-    'Content-Type': 'text/html; charset=utf-8',
-    'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-    'Server-Timing': `db;dur=${dbDur}, cache;dur=0, total;dur=${dbDur}`,
-    'X-Robots-Tag': 'index, follow',
-  });
-  headers.append('Link', `&lt;${SITEMAP_URL}&gt;; rel=preconnect`);
-  headers.append('Link', `&lt;${FEED_URL}&gt;; rel=prefetch`);
-
-  // ── Build HTML with JSON-LD (200 so Googlebot renders it) 
-  const html = `&lt;!DOCTYPE html&gt;
-&lt;html lang="en"&gt;
-&lt;head&gt;
-  &lt;meta charset="UTF-8"&gt;
-  &lt;meta http-equiv="refresh" content="0;url=${target}"&gt;
-  &lt;link rel="canonical" href="${shortUrl}"&gt;
-  &lt;title&gt;Redirecting…&lt;/title&gt;
-  &lt;script type="application/ld+json"&gt;
-  {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": "Resource",
-    "datePublished": "${todayISO}",
-    "dateModified": "${todayISO}",
-    "url": "${shortUrl}"
-  }
-  &lt;/script&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;a href="${target}"&gt;Redirecting…&lt;/a&gt;
-&lt;/body&gt;
-&lt;/html&gt;`;
-
-  return new Response(html, { status: 200, headers });
-}</div>
-      </div>
-
       <!-- Schema Injection tip -->
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div class="card-label" style="margin-bottom:0">✨ Structured Data — JSON-LD Snippet</div>
-          <button class="btn btn-outline" style="font-size:.5rem;padding:3px 9px" onclick="copyCodeBlock('schema-code','copy-schema-btn')" id="copy-schema-btn">📋 Copy</button>
-        </div>
-        <div style="font-size:.62rem;color:var(--muted);margin-bottom:8px">Already included in the Edge Function above. Article schema with <code style="color:var(--accent);background:var(--bg);padding:1px 4px;border-radius:3px">datePublished=today</code> pulls the URL into Google's freshness crawl queue (faster pipeline). Only works if you serve a 200 HTML response — not a bare 301.</div>
-        <div id="schema-code" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:var(--mono);font-size:.55rem;color:var(--text);line-height:1.9;overflow-x:auto;white-space:pre">&lt;script type="application/ld+json"&gt;
+        <div class="card-label">✨ Structured Data — Auto-inject in Edge Function</div>
+        <div style="font-size:.62rem;color:var(--muted);margin-bottom:8px">Add this JSON-LD to each short link redirect page. Article schema with datePublished=today pulls the URL into Google's freshness crawl queue (faster pipeline).</div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:var(--mono);font-size:.55rem;color:var(--text);line-height:1.9;overflow-x:auto;white-space:pre">
+&lt;script type="application/ld+json"&gt;
 {
   "@context": "https://schema.org",
   "@type": "Article",
@@ -2281,25 +2178,6 @@ function robotsColor(s){ return !s||s==='ALLOWED'?'good': s==='DISALLOWED'?'bad'
 function indexingColor(s){ return !s||s==='INDEXING_ALLOWED'?'good': s.includes('BLOCKED')||s.includes('FORBIDDEN')?'bad':'warn'; }
 function fetchColor(s){ return !s||s==='SUCCESSFUL'?'good': s==='SOFT_404'||s==='REDIRECT_ERROR'?'warn': s==='ACCESS_DENIED'||s==='NOT_FOUND'?'bad':''; }
 function he(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-
-// ══════════════════════════════════════════════════════════
-// COPY CODE BLOCK UTILITY
-// ══════════════════════════════════════════════════════════
-function copyCodeBlock(elId, btnId){
-  const el = document.getElementById(elId);
-  const btn = document.getElementById(btnId);
-  if(!el) return;
-  // Decode HTML entities back to real chars for clipboard
-  const decoded = el.innerText
-    .replace(/&lt;/g,'<')
-    .replace(/&gt;/g,'>')
-    .replace(/&amp;/g,'&')
-    .replace(/&quot;/g,'"')
-    .replace(/&#39;/g,"'");
-  navigator.clipboard.writeText(decoded).then(()=>{
-    if(btn){ const orig=btn.textContent; btn.textContent='✓ Copied!'; btn.style.color='var(--accent)'; setTimeout(()=>{ btn.textContent=orig; btn.style.color=''; },2000); }
-  }).catch(()=>{ toast('Copy failed — select text manually',''); });
-}
 </script>
 </body>
 </html>
