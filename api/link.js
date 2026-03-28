@@ -1,27 +1,18 @@
 // api/link.js
 // Short-link redirect — Vercel Edge Function
-// Reads ?code= OR /link/[code] from the URL, looks up target in Supabase,
-// fires a 301 redirect with full SEO headers + Article schema injection.
-//
-// Environment variables needed (set in Vercel dashboard):
-//   SUPABASE_URL  — e.g. https://xxxx.supabase.co
-//   SUPABASE_KEY  — your anon/public key
 
 export const config = { runtime: 'edge' };
 
-const SB_URL = process.env.SUPABASE_URL;
-const SB_KEY = process.env.SUPABASE_KEY;
+const SB_URL = 'https://rbqfmhyuzdizaexbfcem.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJicWZtaHl1emRpemFleGJmY2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDQwOTIsImV4cCI6MjA5MDEyMDA5Mn0.jXYe6qqqc5NCxvMPVVhiGqMYXfyiQ92bj5eCQt2J4WM';
 
-// The IndexNow key — must match the filename in /api/indexnow-key.js
 const INDEXNOW_KEY = 'indexcore';
 
 export default async function handler(req) {
   const url = new URL(req.url);
 
-  // Extract code from path: /link/abcde  OR  /link?code=abcde
   let code = url.searchParams.get('code');
   if (!code) {
-    // Pull from path segment after /link/
     const parts = url.pathname.split('/');
     code = parts[parts.length - 1];
   }
@@ -30,7 +21,6 @@ export default async function handler(req) {
     return new Response('Not found', { status: 404 });
   }
 
-  // ── Fetch target from Supabase ──────────────────────────────
   let target = null;
   try {
     const res = await fetch(
@@ -41,7 +31,6 @@ export default async function handler(req) {
           Authorization: `Bearer ${SB_KEY}`,
           'Content-Type': 'application/json',
         },
-        // Keep-alive for Vercel edge warm reads
         cf: { cacheEverything: false },
       }
     );
@@ -60,16 +49,11 @@ export default async function handler(req) {
     return new Response('Link not found', { status: 404 });
   }
 
-  // ── Increment hit counter (fire-and-forget) ─────────────────
-  // We don't await this — it runs in background so redirect is instant
   incrementHit(code).catch(() => {});
 
-  // ── Build redirect response with SEO headers ────────────────
-  const now       = new Date().toISOString();
-  const shortUrl  = `${url.origin}/link/${code}`;
+  const now      = new Date().toISOString();
+  const shortUrl = `${url.origin}/link/${code}`;
 
-  // Article schema — tells Google this is a fresh, dated resource
-  // This puts the URL in Google's freshness crawl queue
   const schema = JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -83,9 +67,6 @@ export default async function handler(req) {
     },
   });
 
-  // HTML page with instant meta-refresh + schema + canonical
-  // This is served to crawlers before the JS redirect fires
-  // Google sees the schema, follows the canonical, indexes both
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -106,21 +87,15 @@ export default async function handler(req) {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      // Tell Google the canonical destination
       'Link': `<${target}>; rel="canonical"`,
-      // No caching — each visit must be a real hit
       'Cache-Control': 'no-store, no-cache, must-revalidate',
-      // Crawl trust signals (same as a real news publisher)
       'Server-Timing': 'db;dur=4, cache;dur=1, total;dur=12',
-      // CORS open so IndexNow validators can check the key file
       'Access-Control-Allow-Origin': '*',
     },
   });
 }
 
-// ── Increment hit counter in Supabase ───────────────────────────
 async function incrementHit(code) {
-  // Use Supabase RPC to atomically increment — avoids race conditions
   await fetch(`${SB_URL}/rest/v1/rpc/increment_hit`, {
     method: 'POST',
     headers: {
