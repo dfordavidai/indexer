@@ -1,6 +1,10 @@
 {
   "rewrites": [
-    { "source": "/link/:code",  "destination": "/api/link?code=:code" },
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" }
+    { "source": "/link/:code",              "destination": "/api/link?code=:code"               },
+    { "source": "/sitemap.xml",             "destination": "/api/sitemap"                       },
+    { "source": "/sitemap-pages.xml",       "destination": "/api/sitemap?type=pages"            },
+    { "source": "/sitemap-news.xml",        "destination": "/api/sitemap?type=news"             },
+    { "source": "/sitemap-links-:page.xml", "destination": "/api/sitemap?type=links&page=:page" },
+    { "source": "/sitemap-html.xml",        "destination": "/api/sitemap?type=html"             }
   ]
 }
