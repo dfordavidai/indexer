@@ -1,16 +1,4 @@
 // api/sitemap.js — Enterprise Dynamic Sitemap
-// Reads ic_short_links(code, created_at) from Supabase — same table as link.js
-//
-// Routes (all wired in vercel.json):
-//   /sitemap.xml              → sitemap index (submit this to GSC)
-//   /sitemap-pages.xml        → static pages
-//   /sitemap-links-1.xml      → paginated short links (500/page)
-//   /sitemap-news.xml         → last 48h links (Google News freshness queue)
-//   /sitemap-html.xml         → human-readable HTML sitemap
-
-// FIX: removed `export const config = { runtime: 'edge' }` — Edge runtime
-// conflicts with vercel.json rewrites and causes Vercel to serve raw JS bytes
-// instead of invoking the function. Node.js runtime resolves this.
 
 const SB_URL     = 'https://rbqfmhyuzdizaexbfcem.supabase.co';
 const SB_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJicWZtaHl1emRpemFleGJmY2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDQwOTIsImV4cCI6MjA5MDEyMDA5Mn0.jXYe6qqqc5NCxvMPVVhiGqMYXfyiQ92bj5eCQt2J4WM';
@@ -25,9 +13,10 @@ const STATIC_PAGES = [
 ];
 
 export default async function handler(req, res) {
-  const url   = new URL(req.url, `https://${req.headers.host}`);
-  const type  = url.searchParams.get('type') || 'index';
-  const page  = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+  // req.query is populated by Vercel after route rewrites — always use this
+  const q    = req.query || {};
+  const type = q.type || 'index';
+  const page = Math.max(1, parseInt(q.page || '1', 10));
   const today = new Date().toISOString().split('T')[0];
   const t0    = Date.now();
 
