@@ -7,10 +7,10 @@
     { "source": "/link/:code", "destination": "/api/link?code=:code" }
   ],
   "routes": [
-    { "src": "/sitemap.xml",              "dest": "/api/sitemap"                        },
-    { "src": "/sitemap-pages.xml",        "dest": "/api/sitemap?type=pages"             },
-    { "src": "/sitemap-news.xml",         "dest": "/api/sitemap?type=news"              },
+    { "src": "/sitemap.xml",                  "dest": "/api/sitemap"                    },
+    { "src": "/sitemap-pages.xml",            "dest": "/api/sitemap?type=pages"         },
+    { "src": "/sitemap-news.xml",             "dest": "/api/sitemap?type=news"          },
     { "src": "/sitemap-links-([0-9]+)\\.xml", "dest": "/api/sitemap?type=links&page=$1" },
-    { "src": "/sitemap-html.xml",         "dest": "/api/sitemap?type=html"              }
+    { "src": "/sitemap-html.xml",             "dest": "/api/sitemap?type=html"          }
   ]
 }
