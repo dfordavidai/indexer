@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/link/:code", "destination": "/api/link?code=:code" }
+    { "source": "/link/:code",  "destination": "/api/link?code=:code" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" }
   ]
 }
