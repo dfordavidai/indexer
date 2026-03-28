@@ -1,4 +1,8 @@
 {
+  "functions": {
+    "api/sitemap.js": { "runtime": "nodejs18.x" },
+    "api/link.js":    { "runtime": "nodejs18.x" }
+  },
   "rewrites": [
     { "source": "/link/:code", "destination": "/api/link?code=:code" }
   ],
