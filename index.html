@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <!-- saved from url=(0055)file:///C:/Users/tiger/Downloads/linkcore_v6%20(2).html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -304,6 +303,21 @@ textarea{resize:vertical;line-height:1.7}
 /* Push main content up so footer doesn't overlap */
 .main{padding-bottom:52px}
 @keyframes scrollFeed{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ── Multi-Site Manager ── */
+.site-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:10px}
+.site-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;transition:border-color .2s}
+.site-card.site-ok{border-color:rgba(0,255,136,.25)}
+.site-card.site-warn{border-color:rgba(245,158,11,.25)}
+.site-card-domain{font-family:var(--display);font-size:.78rem;font-weight:700;color:#fff;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.site-card-url{font-size:.58rem;color:var(--muted);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.site-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.site-dot.ok{background:var(--accent);box-shadow:0 0 5px var(--accent)}
+.site-dot.warn{background:var(--orange)}
+.site-dot.err{background:var(--red)}
+.site-actions{display:flex;gap:6px;margin-top:10px}
+.add-site-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+
 </style>
 </head>
 <body>
@@ -745,6 +759,79 @@ textarea{resize:vertical;line-height:1.7}
       </div>
     </div>
 
+
+    <!-- ── MULTI-SITE VIEW ── -->
+    <div class="view" id="view-sites">
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">🌐 Multi-Site Indexing</div>
+          <div class="page-sub">Multiple GSC properties × multiple SA keys = maximum daily quota</div>
+        </div>
+        <div class="hdr-btns">
+          <button class="btn btn-outline" onclick="showView('dashboard')">← Back</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">How It Works</div>
+        <div style="font-size:.62rem;color:var(--muted);line-height:1.8">
+          Add multiple GSC-verified domains — each runs its own SA keys independently.
+          <strong style="color:var(--accent)">Blast All Sites</strong> fires URL Inspection + Indexing API from every site simultaneously.
+          <br><br>
+          <span style="color:var(--text)">3 sites × 5 SA keys = </span><strong style="color:var(--accent)">3,000 URL Inspections + 3,000 Indexing API calls/day.</strong>
+          Each domain registers a separate crawl signal — Google treats them as independent sources.
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="card-label" style="margin:0">Sites</div>
+          <div style="font-size:.6rem;color:var(--muted)" id="sites-quota-summary">0 sites · 0 req/day capacity</div>
+        </div>
+        <div class="site-grid" id="site-grid"></div>
+        <div class="empty" id="site-empty" style="border:none;border-top:1px dashed var(--border);border-radius:0;margin-top:10px;padding:30px 20px">
+          <div class="empty-icon" style="font-size:1.6rem">🌐</div>
+          <p>No sites yet. Add your first GSC property below.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">+ Add GSC Property</div>
+        <div class="add-site-grid">
+          <div>
+            <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Site URL (must match GSC property exactly)</div>
+            <input id="new-site-url" placeholder="https://yourdomain.com/">
+          </div>
+          <div>
+            <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Label</div>
+            <input id="new-site-label" placeholder="e.g. Main Blog, Tier 2 Site">
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Service Account JSON (paste one JSON object — add more after saving)</div>
+          <textarea id="new-site-sa" rows="4" placeholder='{"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\n...","client_email":"...@....iam.gserviceaccount.com"}'></textarea>
+          <div class="hint">This SA must be added as Owner in GSC for this property. After adding site, use "Add Key" to add more SA keys.</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="addSite()">+ Add Site</button>
+          <button class="btn btn-outline" style="font-size:.6rem" onclick="testAllSites()">🔍 Test All Connections</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">🚀 Blast All Sites</div>
+        <div style="font-size:.62rem;color:var(--muted);margin-bottom:12px">Select a project and fire all short links across every site simultaneously.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <select id="ms-proj-sel" style="flex:1">
+            <option value="">— Choose a project —</option>
+          </select>
+          <button class="btn btn-primary" onclick="runMultiSiteBlast()">🚀 Blast All Sites</button>
+        </div>
+        <div class="prog-wrap" id="ms-progress"><div class="prog-bar" id="ms-prog-bar"></div></div>
+        <div class="idx-log" id="ms-log"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -848,11 +935,13 @@ let chanSettings = {
 
 // ── Boot ──────────────────────────────────────────────────
 window.addEventListener('load', async () => {
+  loadSites();
   restoreSettings();
   await loadAll();
   refreshBotFeed();
   renderSAVault();
   renderSAStatus();
+  renderSites();
 });
 
 // ══════════════════════════════════════════════════════════
@@ -860,6 +949,8 @@ window.addEventListener('load', async () => {
 // ══════════════════════════════════════════════════════════
 function restoreSettings(){
   try{
+    const ap=localStorage.getItem('lc_active_proj');
+    if(ap) activeProj=ap;
     const v = JSON.parse(localStorage.getItem('lc_sa_vault')||'[]');
     saVault = Array.isArray(v) ? v : [];
     const c = JSON.parse(localStorage.getItem('lc_chan')||'null');
@@ -994,10 +1085,12 @@ function showView(name, projId){
   }
   if(name==='project' && projId){
     activeProj = projId;
+    try{localStorage.setItem('lc_active_proj',projId);}catch(e){}
     renderProjectView(projId);
     document.getElementById('domain-own-card').style.display = '';
   }
   if(name==='settings'){ renderSAVault(); renderSAStatus(); }
+  if(name==='sites'){ renderSites(); }
 }
 
 function switchIdxTab(tab){
@@ -1017,7 +1110,9 @@ async function sbGet(path){
   return r.ok ? r.json() : [];
 }
 async function sbPost(table,data,prefer='resolution=merge-duplicates'){
-  return fetch(`${SB_URL}/rest/v1/${table}`,{method:'POST',headers:{...H,'Prefer':prefer},body:JSON.stringify(data)});
+  const r=await fetch(`${SB_URL}/rest/v1/${table}`,{method:'POST',headers:{...H,'Prefer':`${prefer},return=representation`},body:JSON.stringify(data)});
+  if(!r.ok){const t=await r.text();console.error(`sbPost ${table} HTTP ${r.status}:`,t);}
+  return r;
 }
 async function sbPatch(table,filter,data){
   return fetch(`${SB_URL}/rest/v1/${table}?${filter}`,{method:'PATCH',headers:{...H,'Prefer':'return=minimal'},body:JSON.stringify(data)});
@@ -1042,14 +1137,14 @@ async function loadAll(){
     document.getElementById('sb-status').textContent='Loading…';
     const [projs, lnks] = await Promise.all([
       sbGet('lc_projects?order=created_at.asc'),
-      sbGet('lc_links?order=added_at.asc')
+      sbGet('lc_links?select=*&order=added_at.asc&limit=10000')
     ]);
     projects = projs||[];
     links = {};
     projects.forEach(p=>{ links[p.id]=[]; });
     (lnks||[]).forEach(l=>{ if(links[l.project_id]) links[l.project_id].push(l); });
 
-    const shortRows = await sbGet('ic_short_links?select=code,hits');
+    const shortRows = await sbGet('ic_short_links?select=code,hits&limit=50000');
     const hitsMap = {};
     (shortRows||[]).forEach(r=>{ hitsMap[r.code]=r.hits||0; });
     Object.values(links).flat().forEach(l=>{ if(hitsMap[l.code]!==undefined) l.hits=hitsMap[l.code]; });
@@ -1057,7 +1152,11 @@ async function loadAll(){
     document.getElementById('sb-status').textContent='Connected ✓';
     renderAll();
   }catch(e){
-    document.getElementById('sb-status').textContent='Offline';
+    const isFile = location.protocol==='file:';
+    document.getElementById('sb-status').innerHTML = isFile
+      ? '<span style="color:var(--orange)">⚠ Open via server (not file://)</span>'
+      : '<span style="color:var(--red)">Offline — check Supabase</span>';
+    console.error('loadAll failed:',e);
   }
 }
 
@@ -1249,10 +1348,17 @@ async function createProject(){
 }
 async function deleteProject(id){
   if(!confirm('Delete this project and all its links?')) return;
+  // Clean up ic_short_links for all links in this project
+  const codes=(links[id]||[]).map(l=>l.code);
+  if(codes.length) await sbDelete('ic_short_links',`code=in.(${codes.join(',')})`);
   await sbDelete('lc_projects',`id=eq.${id}`);
   projects = projects.filter(p=>p.id!==id);
   delete links[id];
-  if(activeProj===id){ activeProj=null; showView('dashboard'); }
+  if(activeProj===id){
+    activeProj=null;
+    try{localStorage.removeItem('lc_active_proj');}catch(e){}
+    showView('dashboard');
+  }
   renderAll();
   toast('🗑 Project deleted','');
 }
@@ -1298,7 +1404,10 @@ async function addLinks(){
 }
 
 async function deleteLink(id, projId){
+  // Get code before deleting
+  const lnk = (links[projId]||[]).find(l=>l.id===id);
   await sbDelete('lc_links',`id=eq.${id}`);
+  if(lnk) await sbDelete('ic_short_links',`code=eq.${lnk.code}`);
   links[projId] = (links[projId]||[]).filter(l=>l.id!==id);
   renderAll();
   toast('🗑 Link removed','');
@@ -1901,13 +2010,21 @@ async function refreshVerdicts(){
   if(!activeProj) return;
   const pl = links[activeProj]||[];
   if(!pl.length) return;
+  const ids   = pl.map(l=>l.id).join(',');
   const codes = pl.map(l=>l.code).join(',');
-  const rows  = await sbGet(`ic_short_links?code=in.(${codes})&select=code,hits`);
-  (rows||[]).forEach(r=>{ const l=pl.find(x=>x.code===r.code); if(l) l.hits=r.hits||0; });
+  const [lRows, icRows] = await Promise.all([
+    sbGet(`lc_links?id=in.(${ids})&select=id,verdict,retry_count,submitted`),
+    sbGet(`ic_short_links?code=in.(${codes})&select=code,hits`)
+  ]);
+  (lRows||[]).forEach(r=>{
+    const l=pl.find(x=>x.id===r.id);
+    if(l){ l.verdict=r.verdict||l.verdict; l.retry_count=r.retry_count||0; l.submitted=r.submitted||false; }
+  });
+  (icRows||[]).forEach(r=>{ const l=pl.find(x=>x.code===r.code); if(l) l.hits=r.hits||0; });
   renderProjectView(activeProj);
   renderReport();
   refreshBotFeed();
-  toast('↻ Hits refreshed','green');
+  toast('↻ Status & hits refreshed','green');
 }
 
 // ══════════════════════════════════════════════════════════
