@@ -8,7 +8,9 @@
 //   /sitemap-news.xml         → last 48h links (Google News freshness queue)
 //   /sitemap-html.xml         → human-readable HTML sitemap
 
-export const config = { runtime: 'edge' };
+// FIX: removed `export const config = { runtime: 'edge' }` — Edge runtime
+// conflicts with vercel.json rewrites and causes Vercel to serve raw JS bytes
+// instead of invoking the function. Node.js runtime resolves this.
 
 const SB_URL     = 'https://rbqfmhyuzdizaexbfcem.supabase.co';
 const SB_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJicWZtaHl1emRpemFleGJmY2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NDQwOTIsImV4cCI6MjA5MDEyMDA5Mn0.jXYe6qqqc5NCxvMPVVhiGqMYXfyiQ92bj5eCQt2J4WM';
@@ -18,56 +20,54 @@ const PAGE_SIZE  = 500;
 const NEWS_HOURS = 48;
 
 const STATIC_PAGES = [
-  { loc: `${BASE}/`,           priority: '1.0', changefreq: 'daily'  },
-  { loc: `${BASE}/sitemap.xml`,priority: '0.3', changefreq: 'daily'  },
+  { loc: `${BASE}/`,            priority: '1.0', changefreq: 'daily' },
+  { loc: `${BASE}/sitemap.xml`, priority: '0.3', changefreq: 'daily' },
 ];
 
-export default async function handler(req) {
-  const url   = new URL(req.url);
+export default async function handler(req, res) {
+  const url   = new URL(req.url, `https://${req.headers.host}`);
   const type  = url.searchParams.get('type') || 'index';
   const page  = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
   const today = new Date().toISOString().split('T')[0];
   const t0    = Date.now();
 
-  // Fetch all codes from ic_short_links — same table link.js uses
+  // Fetch all codes from ic_short_links
   let rows = [];
   try {
-    const res = await fetch(
+    const sbRes = await fetch(
       `${SB_URL}/rest/v1/ic_short_links?select=code,created_at&order=created_at.desc&limit=50000`,
       { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
     );
-    rows = res.ok ? await res.json() : [];
+    rows = sbRes.ok ? await sbRes.json() : [];
   } catch { rows = []; }
 
-  const dbDur     = Date.now() - t0;
+  const dbDur      = Date.now() - t0;
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
 
-  // ETag — skip full response if nothing changed since last crawl
+  // ETag — 304 if nothing changed
   const etag = `"${today}-${rows.length}-${type}-${page}"`;
-  if (req.headers.get('if-none-match') === etag) {
-    return new Response(null, { status: 304 });
+  if (req.headers['if-none-match'] === etag) {
+    return res.status(304).end();
   }
 
   let body, ct;
-  if      (type === 'pages')  { body = pagesSitemap(today);                ct = 'application/xml'; }
-  else if (type === 'links')  { body = linksSitemap(rows, page, today);    ct = 'application/xml'; }
-  else if (type === 'news')   { body = newsSitemap(rows);                  ct = 'application/xml'; }
-  else if (type === 'html')   { body = htmlSitemap(rows, today, totalPages); ct = 'text/html';     }
-  else                        { body = sitemapIndex(today, totalPages);     ct = 'application/xml'; }
+  if      (type === 'pages') { body = pagesSitemap(today);                  ct = 'application/xml'; }
+  else if (type === 'links') { body = linksSitemap(rows, page, today);      ct = 'application/xml'; }
+  else if (type === 'news')  { body = newsSitemap(rows);                    ct = 'application/xml'; }
+  else if (type === 'html')  { body = htmlSitemap(rows, today, totalPages); ct = 'text/html';       }
+  else                       { body = sitemapIndex(today, totalPages);       ct = 'application/xml'; }
 
-  const h = new Headers({
-    'Content-Type':   `${ct}; charset=utf-8`,
-    'Cache-Control':  'public, max-age=3600, s-maxage=3600',
-    'Server-Timing':  `db;dur=${dbDur}, total;dur=${Date.now() - t0}`,
-    'ETag':           etag,
-    'X-Sitemap-URLs': String(rows.length),
-  });
-  h.append('Link', `<${BASE}/sitemap.xml>; rel=canonical`);
+  res.setHeader('Content-Type',   `${ct}; charset=utf-8`);
+  res.setHeader('Cache-Control',  'public, max-age=3600, s-maxage=3600');
+  res.setHeader('Server-Timing',  `db;dur=${dbDur}, total;dur=${Date.now() - t0}`);
+  res.setHeader('ETag',           etag);
+  res.setHeader('X-Sitemap-URLs', String(rows.length));
+  res.setHeader('Link',           `<${BASE}/sitemap.xml>; rel=canonical`);
 
-  return new Response(body, { status: 200, headers: h });
+  return res.status(200).send(body);
 }
 
-// ── Sitemap Index ─────────────────────────────────────────────────────
+// ── Sitemap Index ──────────────────────────────────────────────────────
 function sitemapIndex(today, totalPages) {
   const items = [
     `\n  <sitemap><loc>${BASE}/sitemap-pages.xml</loc><lastmod>${today}</lastmod></sitemap>`,
@@ -83,7 +83,7 @@ function sitemapIndex(today, totalPages) {
 </sitemapindex>`;
 }
 
-// ── Pages Sitemap ─────────────────────────────────────────────────────
+// ── Pages Sitemap ──────────────────────────────────────────────────────
 function pagesSitemap(today) {
   const entries = STATIC_PAGES.map(p => `
   <url>
@@ -102,7 +102,7 @@ ${entries}
 </urlset>`;
 }
 
-// ── Links Sitemap (paginated) ─────────────────────────────────────────
+// ── Links Sitemap (paginated) ──────────────────────────────────────────
 function linksSitemap(rows, page, today) {
   const slice   = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const entries = slice.map(r => {
@@ -125,7 +125,7 @@ ${entries}
 </urlset>`;
 }
 
-// ── News Sitemap (last 48h — fires Google freshness queue) ────────────
+// ── News Sitemap (last 48h) ────────────────────────────────────────────
 function newsSitemap(rows) {
   const cutoff = Date.now() - NEWS_HOURS * 3600000;
   const recent = rows
@@ -164,7 +164,7 @@ ${entries}
 </urlset>`;
 }
 
-// ── HTML Sitemap ──────────────────────────────────────────────────────
+// ── HTML Sitemap ───────────────────────────────────────────────────────
 function htmlSitemap(rows, today, totalPages) {
   const items = rows.slice(0, 200).map(r =>
     `<li><a href="${SHORT_BASE}${xe(r.code)}">${xe(r.code)}</a></li>`
