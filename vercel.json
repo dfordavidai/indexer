@@ -1,9 +1,5 @@
 {
-  "version": 2,
-  "routes": [
-    {
-      "src": "/link/(?<code>[a-z]{3,10})$",
-      "dest": "/api/link/[code]"
-    }
+  "rewrites": [
+    { "source": "/link/:code", "destination": "/api/link?code=:code" }
   ]
 }
