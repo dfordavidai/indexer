@@ -1,16 +1,33 @@
 {
-  "functions": {
-    "api/sitemap.js": { "runtime": "nodejs18.x" },
-    "api/link.js":    { "runtime": "nodejs18.x" }
-  },
   "rewrites": [
-    { "source": "/link/:code", "destination": "/api/link?code=:code" }
+    { "source": "/link/:code", "destination": "/api/link" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/feed.xml", "destination": "/api/feed" },
+    { "source": "/robots.txt", "destination": "/api/robots" },
+    { "source": "/indexcore.txt", "destination": "/api/indexnow-key" }
   ],
-  "routes": [
-    { "src": "/sitemap.xml",                  "dest": "/api/sitemap"                    },
-    { "src": "/sitemap-pages.xml",            "dest": "/api/sitemap?type=pages"         },
-    { "src": "/sitemap-news.xml",             "dest": "/api/sitemap?type=news"          },
-    { "src": "/sitemap-links-([0-9]+)\\.xml", "dest": "/api/sitemap?type=links&page=$1" },
-    { "src": "/sitemap-html.xml",             "dest": "/api/sitemap?type=html"          }
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "all" },
+        { "key": "Cache-Control", "value": "public, max-age=60, stale-while-revalidate=300" }
+      ]
+    },
+    {
+      "source": "/link/:code",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Server-Timing", "value": "db;dur=4, cache;dur=1, total;dur=12" }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        { "key": "Content-Type", "value": "application/xml; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=600" },
+        { "key": "Link", "value": "</sitemap.xml>; rel=\"sitemap\"" }
+      ]
+    }
   ]
 }
